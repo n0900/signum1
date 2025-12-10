@@ -19,5 +19,5 @@ jobs:
       - name: Load matrix.json
         id: load
         run: |
-          MATRIX_JSON=$(cat .github/matrix.json)
+          MATRIX_JSON=$(jq -c . .github/matrix.json)
           echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
