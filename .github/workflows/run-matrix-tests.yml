@@ -44,7 +44,7 @@ jobs:
           java-version: '17'
 
       - name: Run tests
-        shell: ${{ matrix.shell || 'bash' }}
+        shell: 'bash'
         run: ./gradlew -Dkotlin.build.report.json.directory="$PWD/metrics" ${{ matrix.testArgs }}
 
       - name: Test Report
