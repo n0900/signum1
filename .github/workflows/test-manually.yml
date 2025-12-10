@@ -42,7 +42,7 @@ jobs:
           java-version: '17'
 
       - name: Run tests
-        run: ${{ matrix.run }}
+        run: ./gradlew -Dkotlin.build.report.json.directory="$PWD/metrics" ${{ matrix.testArgs }}
 
       - name: Test Report
         if: success() || failure()
