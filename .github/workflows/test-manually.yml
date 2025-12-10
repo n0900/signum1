@@ -16,11 +16,11 @@ on:
 
 jobs:
   prepare-matrix:
-    uses: ./.github/workflows/prepare-matrix.yml
+    uses: a-sit-plus/internal-workflows/.github/workflows/prepare-matrix.yml@feature/modularTests
 
   run-tests:
     needs: prepare-matrix
-    uses: ./.github/workflows/run-matrix-tests.yml
+    uses: a-sit-plus/internal-workflows/.github/workflows/run-matrix-tests.yml@feature/modularTests
     with:
       kotlin-version: ${{ inputs.kotlin-version }}
       testballoon-version: ${{ inputs.testballoon-version }}
