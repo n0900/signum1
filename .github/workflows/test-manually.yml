@@ -20,7 +20,7 @@ jobs:
 
   run-tests:
     needs: prepare-matrix
-    uses: ./.github/workflows/run-matrix-tests.yml@v1
+    uses: ./.github/workflows/run-matrix-tests.yml
     with:
       kotlin-version: ${{ inputs.kotlin-version }}
       testballoon-version: ${{ inputs.testballoon-version }}
