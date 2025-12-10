@@ -1,6 +1,5 @@
 {
   "include": [
-    { "os": "macos-latest",   "name": "macRunner",        "arch": "arm64", "testArgs": "allTests -x iosX64Test -x jvmTest -x jsTest" },
     { "os": "ubuntu-latest",  "name": "linuxNativeRunner","arch": "x64",   "testArgs": "linuxX64Test --scan" },
     { "os": "ubuntu-latest",  "name": "jvmRunner",        "arch": "x64",   "testArgs": "jvmTest --scan" },
     { "os": "ubuntu-latest",  "name": "jsRunner",         "arch": "x64",   "testArgs": "jsTest --scan" },

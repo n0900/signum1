@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Load matrix.json
+      - name: Load runner-matrix.json
         id: load
         run: |
           MATRIX_JSON=$(jq -c . .github/matrix.json)
