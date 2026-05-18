@@ -93,22 +93,22 @@ data class JweCompact internal constructor(
         }
 
         /**
-         * Build a compact JWE from already-encrypted components.
+         * Build a compact JWE from components.
          */
-        operator fun invoke(
+        suspend operator fun <P> invoke(
             protectedHeader: JweHeader,
-            encryptedKey: ByteArray? = null,
-            initializationVector: ByteArray? = null,
-            ciphertext: ByteArray,
-            authenticationTag: ByteArray? = null,
+            payload: P,
+            additionalAuthenticatedData: ByteArray? = null,
+            encryptor: suspend (JweHeader.Part, P) -> EncryptionOutput,
         ): JweCompact {
             val plainProtectedHeader = JweProtectedHeaderSerializer.encodeToByteArray(protectedHeader.toPart())
+            val encryptionOutput = encryptor(protectedHeader.toPart(), payload)
             return JweCompact(
                 plainProtectedHeader = plainProtectedHeader,
-                encryptedKey = encryptedKey.takeUnlessEmpty(),
-                initializationVector = initializationVector.takeUnlessEmpty(),
-                ciphertext = ciphertext,
-                authenticationTag = authenticationTag.takeUnlessEmpty(),
+                encryptedKey = encryptionOutput.encryptedKey.takeUnlessEmpty(),
+                initializationVector = encryptionOutput.iv.takeUnlessEmpty(),
+                ciphertext = encryptionOutput.cipherText,
+                authenticationTag = encryptionOutput.authenticationTag.takeUnlessEmpty(),
             )
         }
     }

@@ -103,6 +103,35 @@ data class JweGeneral internal constructor(
 
     companion object {
         operator fun invoke(jweFlattened: List<JweFlattened>): JweGeneral = jweFlattened.toJweGeneral()
+
+        /**
+         * Creates a general JWE from header fragments and immediately encrypts [payload] for each recipient.
+         *
+         * Only [protectedHeader] is integrity-protected by JWE authenticated data. [encryptor] receives the protected
+         * fragment separately from the merged shared and current recipient unprotected fragments.
+         */
+        suspend operator fun <P> invoke(
+            protectedHeader: JweHeader.Part?,
+            payload: P,
+            sharedUnprotectedHeader: JweHeader.Part? = null,
+            recipientUnprotectedHeaders: List<JweHeader.Part?> = listOf(null),
+            additionalAuthenticatedData: ByteArray? = null,
+            encryptor: (
+                protectedHeaderPart: JweHeader.Part?,
+                unprotectedHeaderPart: JweHeader.Part?,
+                payload: P,
+            ) -> EncryptionOutput,
+        ): JweGeneral =
+            recipientUnprotectedHeaders.map { recipientUnprotectedHeader ->
+                JweFlattened(
+                    protectedHeader = protectedHeader,
+                    payload = payload,
+                    sharedUnprotectedHeader = sharedUnprotectedHeader,
+                    recipientUnprotectedHeader = recipientUnprotectedHeader,
+                    additionalAuthenticatedData = additionalAuthenticatedData,
+                    encryptor = encryptor,
+                )
+            }.toJweGeneral()
     }
 }
 
