@@ -2,6 +2,9 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.ECCurve
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.josef.jws.JwsCompact
+import at.asitplus.signum.indispensable.josef.jws.JwsFlattened
+import at.asitplus.signum.indispensable.josef.jws.JwsGeneral
 import at.asitplus.signum.indispensable.toJcaPublicKey
 import at.asitplus.signum.supreme.sign.Signer
 import at.asitplus.signum.supreme.signature
