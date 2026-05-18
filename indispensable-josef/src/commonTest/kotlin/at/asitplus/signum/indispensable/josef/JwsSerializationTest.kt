@@ -3,16 +3,6 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.signum.indispensable.josef.jws.JWS
-import at.asitplus.signum.indispensable.josef.jws.JwsCompact
-import at.asitplus.signum.indispensable.josef.jws.JwsCompactStringSerializer
-import at.asitplus.signum.indispensable.josef.jws.JwsFlattened
-import at.asitplus.signum.indispensable.josef.jws.JwsGeneral
-import at.asitplus.signum.indispensable.josef.jws.JwsProtectedHeaderSerializer
-import at.asitplus.signum.indispensable.josef.jws.SignatureElement
-import at.asitplus.signum.indispensable.josef.jws.toJwsCompact
-import at.asitplus.signum.indispensable.josef.jws.toJwsFlattened
-import at.asitplus.signum.indispensable.josef.jws.toJwsGeneral
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.TestCompartment
 import de.infix.testBalloon.framework.core.testSuite

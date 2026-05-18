@@ -1,8 +1,7 @@
-package at.asitplus.signum.indispensable.josef.jws
+package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
-import at.asitplus.signum.indispensable.josef.jws.JWS.Companion.getSignature
-import at.asitplus.signum.indispensable.josef.JwsHeader
+import at.asitplus.signum.indispensable.josef.JWS.Companion.getSignature
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -12,10 +11,10 @@ import kotlinx.serialization.Transient
  *
  * A [SignatureElement] contains the signature bytes plus the header fragments for that signature. The protected
  * fragment is stored as encoded bytes in [plainProtectedHeader], while the optional unprotected fragment is
- * represented as [at.asitplus.signum.indispensable.josef.JwsHeader.Part]. The effective [jwsHeader] is reconstructed by merging both fragments.
+ * represented as [JwsHeader.Part]. The effective [jwsHeader] is reconstructed by merging both fragments.
  *
  * Either header fragment may be partial. Only the combination of protected and unprotected parameters must
- * constitute a valid [at.asitplus.signum.indispensable.josef.JwsHeader].
+ * constitute a valid [JwsHeader].
  *
  * See [RFC 7515 Sec 7.2.1](https://www.rfc-editor.org/rfc/rfc7515.html#section-7.2.1).
  */

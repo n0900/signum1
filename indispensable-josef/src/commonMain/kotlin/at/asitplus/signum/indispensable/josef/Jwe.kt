@@ -1,7 +1,6 @@
-package at.asitplus.signum.indispensable.josef.jwe
+package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
-import at.asitplus.signum.indispensable.josef.JweHeader
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -21,7 +20,7 @@ import kotlinx.serialization.json.JsonPrimitive
  * Wrapper for all JWE formats.
  */
 @Serializable(with = JWE.JweSerializer::class)
-sealed class JWE {
+sealed class JWE : JsonSecured {
 
     object SerialNames {
         const val PROTECTED = "protected"
@@ -90,16 +89,16 @@ sealed class JWE {
         @OptIn(InternalSerializationApi::class)
         override val descriptor: SerialDescriptor = buildSerialDescriptor("JWE", PolymorphicKind.SEALED) {
             element(SerialNames.COMPACT, JweCompactStringSerializer.descriptor)
-            element(SerialNames.FLATTENED, JweFlattened.serializer().descriptor)
-            element(SerialNames.GENERAL, JweGeneral.serializer().descriptor)
+            element(SerialNames.FLATTENED, JweFlattened.Companion.serializer().descriptor)
+            element(SerialNames.GENERAL, JweGeneral.Companion.serializer().descriptor)
         }
 
         override fun serialize(encoder: Encoder, value: JWE) {
             require(encoder is JsonEncoder) { "JWE serialization requires a JsonEncoder" }
             when (value) {
                 is JweCompact -> encoder.encodeSerializableValue(JweCompactStringSerializer, value)
-                is JweFlattened -> encoder.encodeSerializableValue(JweFlattened.serializer(), value)
-                is JweGeneral -> encoder.encodeSerializableValue(JweGeneral.serializer(), value)
+                is JweFlattened -> encoder.encodeSerializableValue(JweFlattened.Companion.serializer(), value)
+                is JweGeneral -> encoder.encodeSerializableValue(JweGeneral.Companion.serializer(), value)
             }
         }
 
@@ -123,10 +122,10 @@ sealed class JWE {
                             )
 
                         hasRecipients ->
-                            decoder.json.decodeFromJsonElement(JweGeneral.serializer(), jsonElement)
+                            decoder.json.decodeFromJsonElement(JweGeneral.Companion.serializer(), jsonElement)
 
                         hasCiphertext ->
-                            decoder.json.decodeFromJsonElement(JweFlattened.serializer(), jsonElement)
+                            decoder.json.decodeFromJsonElement(JweFlattened.Companion.serializer(), jsonElement)
 
                         else ->
                             throw SerializationException(

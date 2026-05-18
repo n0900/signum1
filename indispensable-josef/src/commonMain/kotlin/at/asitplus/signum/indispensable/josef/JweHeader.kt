@@ -5,8 +5,6 @@ import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.CertificateChainBase64Serializer
 import at.asitplus.signum.indispensable.io.InstantLongSerializer
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.signum.indispensable.josef.jwe.JweProtectedHeaderSerializer
-import at.asitplus.signum.indispensable.josef.jws.strictUnion
 import at.asitplus.signum.indispensable.pki.CertificateChain
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

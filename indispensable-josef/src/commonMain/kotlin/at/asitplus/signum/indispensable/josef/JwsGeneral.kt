@@ -1,8 +1,7 @@
-package at.asitplus.signum.indispensable.josef.jws
+package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.contentEqualsIfArray
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
-import at.asitplus.signum.indispensable.josef.JwsHeader
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient

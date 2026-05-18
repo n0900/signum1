@@ -1,8 +1,7 @@
-package at.asitplus.signum.indispensable.josef.jws
+package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.signum.indispensable.josef.JwsHeader
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.signum.indispensable.josef.jws.JwsTyped.Companion.invoke
+import at.asitplus.signum.indispensable.josef.JwsTyped.Companion.invoke
 import kotlinx.serialization.serializer
 
 typealias JwsCompactTyped<P> = JwsTyped<JwsCompact, P>
@@ -17,7 +16,7 @@ inline fun <reified P, J : JWS> J.typed(): JwsTyped<J, P> =
     JwsTyped(this, getPayload<P>().getOrThrow())
 
 /**
- * Wrapper for [at.asitplus.signum.indispensable.josef.jws.JWS]. Useful when [payload] type is known as part of the contract.
+ * Wrapper for [JWS]. Useful when [payload] type is known as part of the contract.
  * All communication over the wire should use [jws] only!
  *
  * While the constructor can be used the different [invoke]s are recommended.
@@ -36,7 +35,7 @@ data class JwsTyped<out J : JWS, out P>(
             jwsFlattened.toJwsGeneral().typed()
 
         /**
-         * Creates [JwsCompact]. [protectedHeader] must form a valid [at.asitplus.signum.indispensable.josef.JwsHeader].
+         * Creates [JwsCompact]. [protectedHeader] must form a valid [JwsHeader].
          */
         suspend inline operator fun <reified P> invoke(
             protectedHeader: JwsHeader, payload: P, noinline signer: suspend (ByteArray) -> ByteArray
