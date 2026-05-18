@@ -3,6 +3,16 @@ package at.asitplus.signum.indispensable.josef
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.josef.jws.JWS
+import at.asitplus.signum.indispensable.josef.jws.JwsCompact
+import at.asitplus.signum.indispensable.josef.jws.JwsCompactStringSerializer
+import at.asitplus.signum.indispensable.josef.jws.JwsFlattened
+import at.asitplus.signum.indispensable.josef.jws.JwsGeneral
+import at.asitplus.signum.indispensable.josef.jws.JwsProtectedHeaderSerializer
+import at.asitplus.signum.indispensable.josef.jws.SignatureElement
+import at.asitplus.signum.indispensable.josef.jws.toJwsCompact
+import at.asitplus.signum.indispensable.josef.jws.toJwsFlattened
+import at.asitplus.signum.indispensable.josef.jws.toJwsGeneral
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.TestCompartment
 import de.infix.testBalloon.framework.core.testSuite
@@ -12,12 +22,7 @@ import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.types.shouldBeInstanceOf
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
-import kotlinx.serialization.json.JsonArray
-import kotlinx.serialization.json.JsonElement
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.*
 
 private val generalVectorJson = """
     {
@@ -491,7 +496,9 @@ private fun flattenedJson(
     signatureBase64: String = "AQ",
     headerJson: String? = null,
 ): String = """
-    {"protected":"$protectedHeaderBase64","payload":"$payloadBase64","signature":"$signatureBase64"${headerJson?.let { ""","header":$it""" }.orEmpty()}}
+    {"protected":"$protectedHeaderBase64","payload":"$payloadBase64","signature":"$signatureBase64"${
+    headerJson?.let { ""","header":$it""" }.orEmpty()
+}}
 """.trimIndent()
 
 private fun generalJson(
@@ -500,7 +507,9 @@ private fun generalJson(
     signatureBase64: String = "AQ",
     headerJson: String? = null,
 ): String = """
-    {"payload":"$payloadBase64","signatures":[{"protected":"$protectedHeaderBase64","signature":"$signatureBase64"${headerJson?.let { ""","header":$it""" }.orEmpty()}}]}
+    {"payload":"$payloadBase64","signatures":[{"protected":"$protectedHeaderBase64","signature":"$signatureBase64"${
+    headerJson?.let { ""","header":$it""" }.orEmpty()
+}}]}
 """.trimIndent()
 
 private fun flattenedSample(

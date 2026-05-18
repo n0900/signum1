@@ -4,9 +4,14 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.josef.jws.JWS
+import at.asitplus.signum.indispensable.josef.jws.JwsCompact
+import at.asitplus.signum.indispensable.josef.jws.JwsCompactStringSerializer
+import at.asitplus.signum.indispensable.josef.jws.JwsProtectedHeaderSerializer
+import at.asitplus.signum.indispensable.josef.jws.toJwsFlattened
+import at.asitplus.signum.indispensable.josef.jws.toJwsGeneral
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
-import io.kotest.engine.runBlocking
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldEndWith
 import io.kotest.matchers.types.shouldBeInstanceOf

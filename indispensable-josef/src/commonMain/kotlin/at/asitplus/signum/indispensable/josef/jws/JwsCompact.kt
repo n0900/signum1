@@ -1,8 +1,10 @@
-package at.asitplus.signum.indispensable.josef
+package at.asitplus.signum.indispensable.josef.jws
 
 import at.asitplus.KmmResult
 import at.asitplus.catching
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
+import at.asitplus.signum.indispensable.josef.JwsHeader
+import at.asitplus.signum.indispensable.josef.toPart
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
 import io.matthewnelson.encoding.core.Encoder.Companion.encodeToString
 import kotlinx.serialization.KSerializer
@@ -71,17 +73,17 @@ data class JwsCompact internal constructor(
     companion object {
 
         /**
-         * Build a [at.asitplus.signum.indispensable.josef.JwsCompact] received as string
+         * Build a [at.asitplus.signum.indispensable.josef.jws.JwsCompact] received as string
          * and immediately resolve the payload
          */
-        inline fun <reified P> parse(base64UrlString: String): KmmResult<Pair<JwsCompact, P>> = catching{
+        inline fun <reified P> parse(base64UrlString: String): KmmResult<Pair<JwsCompact, P>> = catching {
             val jws = JwsCompact(base64UrlString)
             val payload = jws.getPayload<P>().getOrThrow()
             jws to payload
         }
 
         /**
-         * Build a [at.asitplus.signum.indispensable.josef.JwsCompact] received as string
+         * Build a [at.asitplus.signum.indispensable.josef.jws.JwsCompact] received as string
          */
         operator fun invoke(
             base64UrlString: String,
@@ -107,7 +109,7 @@ data class JwsCompact internal constructor(
         }
 
         /**
-         * Build a new [at.asitplus.signum.indispensable.josef.JwsCompact]
+         * Build a new [JwsCompact]
          * from components and immediately sign the correct representation.
          *
          * [payload] must be the plain payload bytes. Do not base64url-encode it before calling this overload;

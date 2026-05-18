@@ -1,7 +1,20 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.signum.indispensable.josef.typed
+import at.asitplus.signum.indispensable.josef.jws.JWS
+import at.asitplus.signum.indispensable.josef.jws.JwsCompact
+import at.asitplus.signum.indispensable.josef.jws.JwsCompactTyped
+import at.asitplus.signum.indispensable.josef.jws.JwsFlattened
+import at.asitplus.signum.indispensable.josef.jws.JwsFlattenedTyped
+import at.asitplus.signum.indispensable.josef.jws.JwsGeneral
+import at.asitplus.signum.indispensable.josef.jws.JwsGeneralTyped
+import at.asitplus.signum.indispensable.josef.jws.JwsProtectedHeaderSerializer
+import at.asitplus.signum.indispensable.josef.jws.JwsTyped
+import at.asitplus.signum.indispensable.josef.jws.toJwsCompactTyped
+import at.asitplus.signum.indispensable.josef.jws.toJwsFlattened
+import at.asitplus.signum.indispensable.josef.jws.toJwsFlattenedTyped
+import at.asitplus.signum.indispensable.josef.jws.toJwsGeneral
+import at.asitplus.signum.indispensable.josef.jws.typed
 import at.asitplus.testballoon.invoke
 import de.infix.testBalloon.framework.core.testSuite
 import io.kotest.matchers.shouldBe

@@ -1,7 +1,8 @@
-package at.asitplus.signum.indispensable.josef
+package at.asitplus.signum.indispensable.josef.jws
 
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlSerializer
 import at.asitplus.signum.indispensable.io.TransformingSerializerTemplate
+import at.asitplus.signum.indispensable.josef.JwsHeader
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import kotlinx.serialization.json.JsonObject
 
