@@ -1,16 +1,25 @@
 package at.asitplus.signum.indispensable.josef
 
+import at.asitplus.signum.indispensable.CryptoSignature
 import kotlinx.serialization.json.Json
 
 data class JwsCompactTyped<out P, out H : JwsHeaderBase>(
     override val jws: JwsCompact,
     override val payload: P,
-    val header: JwsHeaderWrapped<H>,
+    val wrappedHeader: JwsHeaderWrapped<H>,
+    val signature: CryptoSignature.RawByteEncodable
 ) : JwsTyped<JwsCompact, P, H>()
 
 context(serialFormat: Json)
-inline fun <reified P, reified H : JwsHeaderBase> JwsCompact.typed(): JwsCompactTyped<P,H> =
-    JwsCompactTyped(this, getPayload<P>().getOrThrow(), JwsHeaderWrapped.fromParts(plainProtectedHeader, null))
+inline fun <reified P, reified H : JwsHeaderBase> JwsCompact.typed(): JwsCompactTyped<P, H> =
+    JwsHeaderWrapped.fromParts<H>(plainProtectedHeader, null).let { wrapped ->
+        JwsCompactTyped(
+            this,
+            getPayload<P>().getOrThrow(),
+            wrapped,
+            JWS.getSignature(wrapped.header.algorithm, signatureInput)
+        )
+    }
 
 fun <P, H : JwsHeaderBase> JwsCompactTyped<P, H>.toJwsFlattenedTyped() =
-    JwsFlattenedTyped(jws.toJwsFlattened(), payload, header)
+    JwsFlattenedTyped(jws.toJwsFlattened(), payload, wrappedHeader, signature)
