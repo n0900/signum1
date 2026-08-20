@@ -33,19 +33,27 @@ sealed class JWS {
      */
     abstract val plainPayload: ByteArray
 
-    fun <P> getPayload(serializer: KSerializer<P>, serialFormat: SerialFormat = joseCompliantSerializer): KmmResult<P> = runCatching {
-        when (serialFormat) {
-            is StringFormat -> serialFormat.decodeFromString(serializer, plainPayload.decodeToString())
-            is BinaryFormat -> serialFormat.decodeFromByteArray(serializer, plainPayload)
-            else -> throw NotImplementedError("Unknown serial format $serialFormat")
+    /**
+     * According to [JWS RFC 7515](https://www.rfc-editor.org/info/rfc7515/#section-2) the payload may be any sequence
+     * of octets
+     */
+    fun <P> getPayload(
+        serializer: KSerializer<P>,
+        payloadFormat: SerialFormat = joseCompliantSerializer
+    ): KmmResult<P> = runCatching {
+        when (payloadFormat) {
+            is StringFormat -> payloadFormat.decodeFromString(serializer, plainPayload.decodeToString())
+            is BinaryFormat -> payloadFormat.decodeFromByteArray(serializer, plainPayload)
+            else -> throw NotImplementedError("Unknown serial format $payloadFormat")
         }
     }.wrap()
 
     /**
-     * Find correct serializer at compile time
+     * Find correct serializer at compile time.According to [JWS RFC 7515](https://www.rfc-editor.org/info/rfc7515/#section-2) the payload may be any sequence
+     * of octets
      */
-    inline fun <reified P> getPayload(serialFormat: SerialFormat = joseCompliantSerializer): KmmResult<P> =
-        getPayload(serialFormat.serializersModule.serializer(), serialFormat)
+    inline fun <reified P> getPayload(payloadFormat: SerialFormat = joseCompliantSerializer): KmmResult<P> =
+        getPayload(payloadFormat.serializersModule.serializer(), payloadFormat)
 
     object SerialNames {
         const val PROTECTED = "protected"
@@ -81,7 +89,7 @@ sealed class JWS {
             "${getEncodedProtectedHeader(protectedHeader)}.${payload.encodeToString(Base64UrlStrict)}".encodeToByteArray()
     }
 
-    object JwsSerializer: KSerializer<JWS> {
+    object JwsSerializer : KSerializer<JWS> {
         @OptIn(InternalSerializationApi::class)
         override val descriptor: SerialDescriptor = buildSerialDescriptor("JWS", PolymorphicKind.SEALED) {
             element(SerialNames.COMPACT, JwsCompactStringSerializer.descriptor)
@@ -115,7 +123,7 @@ sealed class JWS {
                         hasGeneralSignatures && hasFlattenedSignature ->
                             throw SerializationException(
                                 "Invalid JWS JSON serialization: object must not contain both " +
-                                    "'${SerialNames.SIGNATURE}' and '${SerialNames.SIGNATURES}'"
+                                        "'${SerialNames.SIGNATURE}' and '${SerialNames.SIGNATURES}'"
                             )
 
                         hasGeneralSignatures ->
@@ -127,7 +135,7 @@ sealed class JWS {
                         else ->
                             throw SerializationException(
                                 "Invalid JWS JSON serialization: object must contain " +
-                                    "'${SerialNames.SIGNATURE}' or '${SerialNames.SIGNATURES}'"
+                                        "'${SerialNames.SIGNATURE}' or '${SerialNames.SIGNATURES}'"
                             )
                     }
                 }
