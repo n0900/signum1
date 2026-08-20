@@ -51,12 +51,6 @@ data class SignatureElement internal constructor(
         plainProtectedHeader.requireAbsentIfEmptyProtectedHeader()
     }
 
-    @Transient
-    val wrappedHeader = JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
-
-    @Transient
-    val signature = getSignature(wrappedHeader.header.algorithm, plainSignature)
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -79,8 +73,3 @@ data class SignatureElement internal constructor(
 
 val SignatureElement.protectedHeader: JsonObject?
     get() = plainProtectedHeader?.toProtectedHeaderJsonObject()
-
-/** Decodes this signature element's headers while [H] is reified. */
-context(serialFormat: Json)
-inline fun <reified H : JwsHeaderBase> SignatureElement.decodeHeader(): JwsHeaderWrapped<H> =
-    JwsHeaderWrapped.fromParts<H>(plainProtectedHeader, unprotectedHeader)

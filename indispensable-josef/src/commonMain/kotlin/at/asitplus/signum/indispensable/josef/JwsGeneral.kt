@@ -96,8 +96,3 @@ fun JwsGeneral.toJwsFlattened(): List<JwsFlattened> =
             plainSignature = it.plainSignature
         )
     }
-
-/** Decodes every signature header in this general JWS while [H] is reified. */
-context(serialFormat: Json)
-inline fun <reified H : JwsHeaderBase> JwsGeneral.decodeHeaders(): List<JwsHeaderWrapped<H>> =
-    signatureElements.map { it.decodeHeader<H>() }

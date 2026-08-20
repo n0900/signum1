@@ -137,8 +137,3 @@ fun List<JwsFlattened>.toJwsGeneral(): JwsGeneral {
         signatureElements = signatures
     )
 }
-
-/** Decodes this flattened JWS's headers while [H] is reified. */
-context(serialFormat: Json)
-inline fun <reified H : JwsHeaderBase> JwsFlattened.decodeHeader(): JwsHeaderWrapped<H> =
-    JwsHeaderWrapped.fromParts<H>(plainProtectedHeader, unprotectedHeader)

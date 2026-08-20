@@ -167,8 +167,3 @@ fun JwsCompact.toJwsFlattened(): JwsFlattened = JwsFlattened(
     plainSignature = plainSignature,
 )
 
-/** Decodes this compact JWS's protected header while [H] is reified. */
-context(serialFormat: Json)
-inline fun <reified H : JwsHeaderBase> JwsCompact.decodeHeader(): JwsHeaderWrapped<H> =
-    JwsHeaderWrapped.fromParts<H>(plainProtectedHeader)
-
