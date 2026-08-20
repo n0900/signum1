@@ -49,7 +49,7 @@ sealed class JWS {
     }.wrap()
 
     /**
-     * Find correct serializer at compile time.According to [JWS RFC 7515](https://www.rfc-editor.org/info/rfc7515/#section-2) the payload may be any sequence
+     * Find correct serializer at compile time. According to [JWS RFC 7515](https://www.rfc-editor.org/info/rfc7515/#section-2) the payload may be any sequence
      * of octets
      */
     inline fun <reified P> getPayload(payloadFormat: SerialFormat = joseCompliantSerializer): KmmResult<P> =
