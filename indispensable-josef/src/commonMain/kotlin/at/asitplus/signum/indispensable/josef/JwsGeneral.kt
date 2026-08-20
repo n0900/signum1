@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 
 /**
@@ -33,9 +34,6 @@ data class JwsGeneral internal constructor(
     init {
         require(signatureElements.isNotEmpty()) { "At least one signature is required" }
     }
-
-    @Transient
-    val wrappedHeaders: List<JwsHeaderWrapped> = signatureElements.map { it.wrappedHeader }
 
     @Transient
     val signatures = signatureElements.map { it.signature }
@@ -98,3 +96,8 @@ fun JwsGeneral.toJwsFlattened(): List<JwsFlattened> =
             plainSignature = it.plainSignature
         )
     }
+
+/** Decodes every signature header in this general JWS while [H] is reified. */
+context(serialFormat: Json)
+inline fun <reified H : JwsHeaderBase> JwsGeneral.decodeHeaders(): List<JwsHeaderWrapped<H>> =
+    signatureElements.map { it.decodeHeader<H>() }
