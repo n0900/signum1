@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 
 /**
@@ -44,12 +45,6 @@ data class JwsFlattened internal constructor(
     }
 
     @Transient
-    val wrappedHeader = JwsHeader.fromParts(plainProtectedHeader, unprotectedHeader)
-
-    @Transient
-    val signature = getSignature(wrappedHeader.header.algorithm, plainSignature)
-
-    @Transient
     val signatureInput = getSignatureInput(plainProtectedHeader, plainPayload)
 
     override fun equals(other: Any?): Boolean {
@@ -81,15 +76,16 @@ data class JwsFlattened internal constructor(
          *
          * [payload] must be the plain payload bytes. Do not base64url-encode it before calling this overload;
          * flattened JSON serialization and signing input construction apply base64url encoding internally.
-        */
+         */
         suspend operator fun invoke(
-            wrappedHeader: JwsHeaderWrapped,
+            wrappedHeader: JwsHeaderWrapped<*>,
             payload: ByteArray,
             signer: suspend (ByteArray) -> ByteArray
         ): JwsFlattened {
-            val plainProtectedHeader = wrappedHeader.toProtectedHeader()
+            val (encodedProtectedHeader, encodedUnprotectedHeader) = wrappedHeader.toHeaderParts()
+            val plainProtectedHeader = encodedProtectedHeader
                 .takeUnless { it.toProtectedHeaderJsonObject().isEmpty() }
-            val unprotectedHeader = wrappedHeader.toUnprotectedHeader()
+            val unprotectedHeader = encodedUnprotectedHeader
                 .takeUnless { it.isEmpty() }
             return JwsFlattened(
                 plainProtectedHeader,
@@ -102,7 +98,7 @@ data class JwsFlattened internal constructor(
 }
 
 val JwsFlattened.protectedHeader: JsonObject?
-        get() = plainProtectedHeader?.toProtectedHeaderJsonObject()
+    get() = plainProtectedHeader?.toProtectedHeaderJsonObject()
 
 /**
  * Converts flattened JSON serialization to compact serialization.
@@ -141,3 +137,8 @@ fun List<JwsFlattened>.toJwsGeneral(): JwsGeneral {
         signatureElements = signatures
     )
 }
+
+/** Decodes this flattened JWS's headers while [H] is reified. */
+context(serialFormat: Json)
+inline fun <reified H : JwsHeaderBase> JwsFlattened.decodeHeader(): JwsHeaderWrapped<H> =
+    JwsHeaderWrapped.fromParts<H>(plainProtectedHeader, unprotectedHeader)
