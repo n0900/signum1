@@ -112,7 +112,7 @@ data class JwsCompact internal constructor(
          * [payload] must be the plain payload bytes. Do not base64url-encode it before calling this overload;
          * compact serialization and signing input construction apply base64url encoding internally.
          */
-        @Deprecated("")
+        @Deprecated("Will be replaced by real signing service")
         suspend operator fun invoke(
             protectedHeader: JwsHeader,
             payload: ByteArray,
@@ -123,6 +123,7 @@ data class JwsCompact internal constructor(
          * Builds a compact JWS using a wrapped custom header. Compact serialization cannot carry unprotected
          * members, so every represented header member must be protected.
          */
+        @Deprecated("Will be replaced by real signing service")
         suspend operator fun invoke(
             wrappedHeader: JwsHeaderWrapped<*>,
             payload: ByteArray,

@@ -77,6 +77,7 @@ data class JwsFlattened internal constructor(
          * [payload] must be the plain payload bytes. Do not base64url-encode it before calling this overload;
          * flattened JSON serialization and signing input construction apply base64url encoding internally.
          */
+        @Deprecated("Will be replaced by real signing service")
         suspend operator fun invoke(
             wrappedHeader: JwsHeaderWrapped<*>,
             payload: ByteArray,
