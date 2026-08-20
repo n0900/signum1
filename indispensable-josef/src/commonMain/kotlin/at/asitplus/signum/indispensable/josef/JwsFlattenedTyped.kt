@@ -9,5 +9,5 @@ data class JwsFlattenedTyped<out P, out H : JwsHeaderBase>(
 ) : JwsTyped<JwsFlattened, P, H>()
 
 context(serialFormat: Json)
-inline fun <reified P, reified H : JwsHeaderBase> JwsFlattened.typed() =
+inline fun <reified P, reified H : JwsHeaderBase> JwsFlattened.typed(): JwsFlattenedTyped<P,H> =
     JwsFlattenedTyped(this, getPayload<P>().getOrThrow(), decodeHeader())

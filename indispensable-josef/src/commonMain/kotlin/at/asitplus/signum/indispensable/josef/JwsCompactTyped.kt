@@ -9,5 +9,5 @@ data class JwsCompactTyped<out P, out H : JwsHeaderBase>(
 ) : JwsTyped<JwsCompact, P, H>()
 
 context(serialFormat: Json)
-inline fun <reified P, reified H : JwsHeaderBase> JwsCompact.typed() =
+inline fun <reified P, reified H : JwsHeaderBase> JwsCompact.typed(): JwsCompactTyped<P,H> =
     JwsCompactTyped(this, getPayload<P>().getOrThrow(), decodeHeader())

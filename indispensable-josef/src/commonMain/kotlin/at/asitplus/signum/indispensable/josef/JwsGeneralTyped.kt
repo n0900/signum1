@@ -9,5 +9,5 @@ data class JwsGeneralTyped<out P, out H : JwsHeaderBase>(
 ) : JwsTyped<JwsGeneral, P, H>()
 
 context(serialFormat: Json)
-inline fun <reified P, reified H: JwsHeaderBase> JwsGeneral.typed() =
+inline fun <reified P, reified H: JwsHeaderBase> JwsGeneral.typed(): JwsGeneralTyped<P,H> =
     JwsGeneralTyped(this, getPayload<P>().getOrThrow(), decodeHeaders())
