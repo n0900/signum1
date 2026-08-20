@@ -10,4 +10,7 @@ data class JwsCompactTyped<out P, out H : JwsHeaderBase>(
 
 context(serialFormat: Json)
 inline fun <reified P, reified H : JwsHeaderBase> JwsCompact.typed(): JwsCompactTyped<P,H> =
-    JwsCompactTyped(this, getPayload<P>().getOrThrow(), decodeHeader())
+    JwsCompactTyped(this, getPayload<P>().getOrThrow(), JwsHeaderWrapped.fromParts(plainProtectedHeader, null))
+
+fun <P, H : JwsHeaderBase> JwsCompactTyped<P, H>.toJwsFlattenedTyped() =
+    JwsFlattenedTyped(jws.toJwsFlattened(), payload, header)
