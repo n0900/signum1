@@ -10,7 +10,6 @@ import at.asitplus.signum.indispensable.pki.CertificateChain
 import at.asitplus.signum.indispensable.pki.leaf
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.*
 import kotlin.time.Instant
 
 
@@ -36,7 +35,7 @@ data class JwsHeader(
      * parameter value.
      */
     @SerialName(SerialNames.KEY_ID)
-    val keyId: String? = null,
+    override val keyId: String? = null,
 
     /**
      * The "typ" (type) Header Parameter is used by JWS applications to
@@ -51,7 +50,7 @@ data class JwsHeader(
      * Use of this Header Parameter is OPTIONAL.
      */
     @SerialName(SerialNames.TYPE)
-    val type: String? = null,
+    override val type: String? = null,
 
     /**
      * The "alg" (algorithm) Header Parameter identifies the cryptographic
@@ -67,7 +66,7 @@ data class JwsHeader(
      * implementations.
      */
     @SerialName(SerialNames.ALGORITHM)
-    val algorithm: JwsAlgorithm,
+    override val algorithm: JwsAlgorithm,
 
     /**
      * The "cty" (content type) Header Parameter is used by JWS applications
@@ -82,7 +81,7 @@ data class JwsHeader(
      * Parameter is OPTIONAL.
      */
     @SerialName(SerialNames.CONTENT_TYPE)
-    val contentType: String? = null,
+    override val contentType: String? = null,
 
     /**
      * The "x5c" (X.509 certificate chain) Header Parameter contains the
@@ -102,7 +101,7 @@ data class JwsHeader(
      */
     @SerialName(SerialNames.CERTIFICATE_CHAIN)
     @Serializable(with = CertificateChainBase64Serializer::class)
-    val certificateChain: CertificateChain? = null,
+    override val certificateChain: CertificateChain? = null,
 
     /**
      * RFC 7519: The "nbf" (not before) claim identifies the time before which the JWT
@@ -147,7 +146,7 @@ data class JwsHeader(
      * OPTIONAL.
      */
     @SerialName(SerialNames.JSON_WEB_KEY)
-    val jsonWebKey: JsonWebKey? = null,
+    override val jsonWebKey: JsonWebKey? = null,
 
     /**
      * The "jku" (JWK Set URL) Header Parameter is a URI (RFC3986) that
@@ -162,7 +161,7 @@ data class JwsHeader(
      * OPTIONAL.
      */
     @SerialName(SerialNames.JSON_WEB_KEY_SET_URL)
-    val jsonWebKeySetUrl: String? = null,
+    override val jsonWebKeySetUrl: String? = null,
 
     /**
      * The "x5u" (X.509 URL) Header Parameter is a URI (RFC3986) that refers
@@ -183,7 +182,7 @@ data class JwsHeader(
      * Parameter is OPTIONAL.
      */
     @SerialName(SerialNames.CERTIFICATE_URL)
-    val certificateUrl: String? = null,
+    override val certificateUrl: String? = null,
 
     /**
      * The "x5t" (X.509 certificate SHA-1 thumbprint) Header Parameter is a
@@ -195,7 +194,7 @@ data class JwsHeader(
      */
     @SerialName(SerialNames.CERTIFICATE_SHA1_THUMBPRINT)
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
-    val certificateSha1Thumbprint: ByteArray? = null,
+    override val certificateSha1Thumbprint: ByteArray? = null,
 
     /**
      * The "x5t#S256" (X.509 certificate SHA-256 thumbprint) Header
@@ -207,7 +206,7 @@ data class JwsHeader(
      */
     @SerialName(SerialNames.CERTIFICATE_SHA256_THUMBPRINT)
     @Serializable(with = ByteArrayBase64UrlSerializer::class)
-    val certificateSha256Thumbprint: ByteArray? = null,
+    override val certificateSha256Thumbprint: ByteArray? = null,
 
     /**
      * OID4VP: Verifier Attestation JWT, used to authenticate a Verifier, by providing a JWT signed by a trusted
@@ -250,7 +249,8 @@ data class JwsHeader(
      */
     @SerialName(SerialNames.CLIENT_ID)
     val clientId: String? = null,
-) {
+) : JwsHeaderBase {
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || this::class != other::class) return false
@@ -315,13 +315,19 @@ data class JwsHeader(
             ?: certificateChain?.leaf?.publicKey
     }
 
-    val keyAttestationParsed: JwsCompactTyped<KeyAttestationJwt>? by lazy {
-        keyAttestation?.typed()
+    val keyAttestationParsed: JwsCompactTyped<KeyAttestationJwt, JwsHeader>? by lazy {
+        context(joseCompliantSerializer) {
+            keyAttestation?.typed()
+        }
     }
 
-    val verifierAttestationParsed: JwsCompactTyped<JsonWebToken>? by lazy {
-        attestationJwt?.typed()
+    val verifierAttestationParsed: JwsCompactTyped<JsonWebToken, JwsHeader>? by lazy {
+        context(joseCompliantSerializer) {
+            attestationJwt?.typed()
+        }
     }
+
+    override val crit: List<String>? = null
 
     object SerialNames {
         const val KEY_ID = "kid"
@@ -344,39 +350,7 @@ data class JwsHeader(
     }
 
     companion object {
-        /**
-         * Decodes the protected fragment and merges it with the optional unprotected fragment.
-         *
-         * This is the form used when reading serialized JWS values such as [JwsCompact] or [JwsFlattened].
-         */
-        internal fun fromParts(
-            protectedHeader: ByteArray? = null,
-            unprotectedHeader: JsonObject? = null,
-        ): JwsHeaderWrapped =
-            fromJsonObjects(
-                protectedHeader = protectedHeader?.toProtectedHeaderJsonObject(),
-                unprotectedHeader = unprotectedHeader,
-            )
-
-        internal fun fromJsonObjects(
-            protectedHeader: JsonObject? = null,
-            unprotectedHeader: JsonObject? = null,
-        ): JwsHeaderWrapped = JwsHeaderWrapped(
-            joseCompliantSerializer
-                .decodeFromJsonElement<JwsHeader>(protectedHeader.strictUnion(unprotectedHeader)),
-            unprotectedHeader?.keys ?: emptySet()
-        )
-    }
-}
-
-internal fun JsonObject.toProtectedHeaderBytes(): ByteArray =
-    joseCompliantSerializer.encodeToString(JsonObject.serializer(), this).encodeToByteArray()
-
-internal fun ByteArray.toProtectedHeaderJsonObject(): JsonObject =
-    joseCompliantSerializer.decodeFromString(JsonObject.serializer(), decodeToString())
-
-internal fun ByteArray?.requireAbsentIfEmptyProtectedHeader() {
-    require(this == null || toProtectedHeaderJsonObject().isNotEmpty()) {
-        "JWS protected header must be absent when it would otherwise be empty"
+        @Deprecated("Use JwsHeaderWrapped to carry protected/unprotected member placement")
+        typealias Part = JwsHeader
     }
 }
