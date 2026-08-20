@@ -9,5 +9,11 @@ data class JwsGeneralTyped<out P, out H : JwsHeaderBase>(
 ) : JwsTyped<JwsGeneral, P, H>()
 
 context(serialFormat: Json)
-inline fun <reified P, reified H: JwsHeaderBase> JwsGeneral.typed(): JwsGeneralTyped<P,H> =
-    JwsGeneralTyped(this, getPayload<P>().getOrThrow(), decodeHeaders())
+inline fun <reified P, reified H : JwsHeaderBase> JwsGeneral.typed(): JwsGeneralTyped<P, H> =
+    JwsGeneralTyped(
+        this,
+        getPayload<P>().getOrThrow(),
+        signatureElements.map { JwsHeaderWrapped.fromParts(it.plainProtectedHeader, it.unprotectedHeader) })
+
+fun <P, H : JwsHeaderBase> JwsGeneralTyped<P, H>.toJwsFlattenedTyped() =
+    jws.toJwsFlattened().mapIndexed { index, flattened -> JwsFlattenedTyped(flattened, payload, header[index]) }

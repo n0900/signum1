@@ -1,11 +1,8 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.io.ByteArrayBase64UrlNoPaddingSerializer
-import at.asitplus.signum.indispensable.josef.JWS.Companion.getSignature
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 
 /**
@@ -70,6 +67,3 @@ data class SignatureElement internal constructor(
         return result
     }
 }
-
-val SignatureElement.protectedHeader: JsonObject?
-    get() = plainProtectedHeader?.toProtectedHeaderJsonObject()
