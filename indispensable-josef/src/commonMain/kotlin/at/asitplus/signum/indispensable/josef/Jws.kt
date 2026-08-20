@@ -111,9 +111,7 @@ sealed class JWS {
 
         override fun deserialize(decoder: Decoder): JWS {
             require(decoder is JsonDecoder) { "JWS deserialization requires a JsonDecoder" }
-            val jsonElement = decoder.decodeJsonElement()
-
-            return when (jsonElement) {
+            return when (val jsonElement = decoder.decodeJsonElement()) {
                 is JsonPrimitive -> decoder.json.decodeFromJsonElement(JwsCompactStringSerializer, jsonElement)
                 is JsonObject -> {
                     val hasGeneralSignatures = SerialNames.SIGNATURES in jsonElement
