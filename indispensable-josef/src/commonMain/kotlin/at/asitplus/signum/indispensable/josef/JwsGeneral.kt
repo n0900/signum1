@@ -36,9 +36,6 @@ data class JwsGeneral internal constructor(
     }
 
     @Transient
-    val signatures = signatureElements.map { it.signature }
-
-    @Transient
     val signatureInputs = signatureElements.map { getSignatureInput(it.plainProtectedHeader, plainPayload) }
 
     /**
