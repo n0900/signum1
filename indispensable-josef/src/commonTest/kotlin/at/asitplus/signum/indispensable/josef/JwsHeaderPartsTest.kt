@@ -80,16 +80,21 @@ val JwsHeaderPartsTest by matrixSuite {
             plainPayload = byteArrayOf(1),
             plainSignature = byteArrayOf(2),
         )
+        val reconstructedHeader = with(joseCompliantSerializer) {
+            JwsHeaderWrapped.fromParts<JwsHeader>(flattened.plainProtectedHeader, flattened.unprotectedHeader)
+        }
 
-        flattened.wrappedHeader shouldBe wrappedHeader
+        reconstructedHeader shouldBe wrappedHeader
     }
 
     "duplicate names across protected and unprotected headers are rejected" {
         val exception = runCatching {
-            JwsHeader.fromJsonObjects(
-                protectedHeader = JsonObject(mapOf(JwsHeader.SerialNames.KEY_ID to JsonPrimitive("protected"))),
-                unprotectedHeader = JsonObject(mapOf(JwsHeader.SerialNames.KEY_ID to JsonPrimitive("unprotected"))),
-            )
+            with(joseCompliantSerializer) {
+                JwsHeaderWrapped.fromJsonObjects<JwsHeader>(
+                    protectedHeader = JsonObject(mapOf(JwsHeader.SerialNames.KEY_ID to JsonPrimitive("protected"))),
+                    unprotectedHeader = JsonObject(mapOf(JwsHeader.SerialNames.KEY_ID to JsonPrimitive("unprotected"))),
+                )
+            }
         }
 
         exception.shouldBeFailure() shouldBe IllegalArgumentException("Duplicate keys: kid")
@@ -115,9 +120,12 @@ val JwsHeaderPartsTest by matrixSuite {
         val reparsed = joseCompliantSerializer.decodeFromString<JwsFlattened>(
             joseCompliantSerializer.encodeToString(flattened)
         )
+        val reparsedHeader = with(joseCompliantSerializer) {
+            JwsHeaderWrapped.fromParts<JwsHeader>(reparsed.plainProtectedHeader, reparsed.unprotectedHeader)
+        }
 
-        reparsed.wrappedHeader shouldBe wrappedHeader
-        reparsed.wrappedHeader.header shouldBe header
+        reparsedHeader shouldBe wrappedHeader
+        reparsedHeader.header shouldBe header
     }
 
     "effective member placement ignores names absent from the modeled header" {
@@ -147,8 +155,11 @@ val JwsHeaderPartsTest by matrixSuite {
             payload = "payload".encodeToByteArray(),
         ) { byteArrayOf(1) }
         val serialized = joseCompliantSerializer.encodeToJsonElement(flattened).jsonObject
+        val reconstructedHeader = with(joseCompliantSerializer) {
+            JwsHeaderWrapped.fromParts<JwsHeader>(flattened.plainProtectedHeader, flattened.unprotectedHeader)
+        }
 
-        flattened.wrappedHeader shouldBe wrappedHeader
+        reconstructedHeader shouldBe wrappedHeader
         flattened.unprotectedHeader shouldBe null
         (JWS.SerialNames.HEADER in serialized) shouldBe false
     }

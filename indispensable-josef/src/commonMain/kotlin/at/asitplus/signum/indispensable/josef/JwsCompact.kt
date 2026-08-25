@@ -24,13 +24,11 @@ import kotlinx.serialization.json.Json
  *
  * This class does not support an unprotected header field!
  *
- * [JwsCompact] is intentionally *not* annotated with `@Serializable`: its JSON representation is only the compact
- * JWS string, not a JSON object. Use [JwsCompactStringSerializer] explicitly when you want that string form inside
- * a JSON document.
+ * [JwsCompact] is intentionally *not* annotated with `@Serializable`: its canonical representation is compact
+ * JWS string itself which is non-escaped, not a JSON String. Use [JwsCompactStringSerializer] explicitly when you want to
+ * use it from inside a JSON object. For a standalone compact JWS string, use [toString] instead.
  *
- * For a standalone compact JWS string, use [toString] and [JwsCompact.invoke].
- *
- * If [plainPayload] data structure is defined as part of the contact consider [JwsCompactTyped]
+ * To access the contents of the parameters use [JwsCompactTyped]
  */
 @ConsistentCopyVisibility
 data class JwsCompact internal constructor(
@@ -167,4 +165,3 @@ fun JwsCompact.toJwsFlattened(): JwsFlattened = JwsFlattened(
     plainPayload = plainPayload,
     plainSignature = plainSignature,
 )
-

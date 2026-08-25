@@ -12,6 +12,7 @@ import at.asitplus.testballoon.matrix.*
 import io.kotest.engine.runBlocking
 import io.kotest.matchers.booleans.shouldBeTrue
 import io.kotest.matchers.shouldBe
+import kotlinx.serialization.json.JsonObject
 import java.security.interfaces.ECPublicKey
 
 val JwsJvmTest by matrixSuite {
@@ -51,10 +52,13 @@ val JwsJvmTest by matrixSuite {
 
             val serialized = compact.toString()
             val parsed = JWSObject.parse(serialized)
+            val typedCompact = with(joseCompliantSerializer) {
+                compact.typed<JsonObject, JwsHeader>()
+            }
 
             parsed.verify(it.verifier1).shouldBeTrue()
             parsed.header.keyID shouldBe "kid-1"
-            compact.wrappedHeader shouldBe JwsHeaderWrapped(header)
+            typedCompact.wrappedHeader shouldBe JwsHeaderWrapped(header)
         }
 
         "flattened JWS can be serialized and verified by Nimbus" { it ->
@@ -74,12 +78,15 @@ val JwsJvmTest by matrixSuite {
 
             val serialized = joseCompliantSerializer.encodeToString(JwsFlattened.serializer(), flattened)
             val parsed = JWSObjectJSON.parse(serialized)
+            val typedFlattened = with(joseCompliantSerializer) {
+                flattened.typed<JsonObject, JwsHeader>()
+            }
 
             parsed.signatures.size shouldBe 1
             parsed.signatures.single().verify(it.verifier1).shouldBeTrue()
             parsed.signatures.single().header.keyID shouldBe null
             parsed.signatures.single().unprotectedHeader.keyID shouldBe "kid-1"
-            flattened.wrappedHeader shouldBe wrappedHeader
+            typedFlattened.wrappedHeader shouldBe wrappedHeader
         }
 
         "general JWS can be serialized and verified by Nimbus" { it ->
@@ -109,6 +116,12 @@ val JwsJvmTest by matrixSuite {
             val general = JwsGeneral.invoke(listOf(flattened1, flattened2))
             val serialized = joseCompliantSerializer.encodeToString(JwsGeneral.serializer(), general)
             val parsed = JWSObjectJSON.parse(serialized)
+            val typedGeneral = with(joseCompliantSerializer) {
+                general.typed<JsonObject, JwsHeader>()
+            }
+            val typedFlattened = with(joseCompliantSerializer) {
+                listOf(flattened1, flattened2).map { it.typed<JsonObject, JwsHeader>() }
+            }
 
             parsed.signatures.size shouldBe 2
             parsed.signatures[0].verify(it.verifier1).shouldBeTrue()
@@ -117,8 +130,8 @@ val JwsJvmTest by matrixSuite {
             parsed.signatures[1].header.keyID shouldBe null
             parsed.signatures[0].unprotectedHeader.keyID shouldBe "kid-1"
             parsed.signatures[1].unprotectedHeader.keyID shouldBe "kid-2"
-            general.wrappedHeaders[0] shouldBe flattened1.wrappedHeader
-            general.wrappedHeaders[1] shouldBe flattened2.wrappedHeader
+            typedGeneral.wrappedHeaders[0] shouldBe typedFlattened[0].wrappedHeader
+            typedGeneral.wrappedHeaders[1] shouldBe typedFlattened[1].wrappedHeader
         }
     }
 }

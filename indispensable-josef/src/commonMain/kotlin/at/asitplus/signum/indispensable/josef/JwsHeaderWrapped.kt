@@ -131,8 +131,11 @@ internal fun JsonObject.toProtectedHeaderBytes(): ByteArray =
 internal fun ByteArray.toProtectedHeaderJsonObject(): JsonObject =
     joseCompliantSerializer.decodeFromString(JsonObject.serializer(), decodeToString())
 
+private const val EMPTY_JSON_OBJECT = "{}"
+private val EMPTY_JSON_OBJECT_BYTES = EMPTY_JSON_OBJECT.encodeToByteArray()
+
 internal fun ByteArray?.requireAbsentIfEmptyProtectedHeader() {
-    require(this == null || toProtectedHeaderJsonObject().isNotEmpty()) {
+    require(this == null || !contentEquals(EMPTY_JSON_OBJECT_BYTES)) {
         "JWS protected header must be absent when it would otherwise be empty"
     }
 }

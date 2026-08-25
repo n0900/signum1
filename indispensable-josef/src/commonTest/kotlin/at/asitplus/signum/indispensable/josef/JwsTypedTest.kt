@@ -32,6 +32,7 @@ val JwsTypedTest by matrixSuite {
             ),
             payload = payload,
             wrappedHeader = wrappedHeader,
+            signature = JWS.getSignature(header.algorithm, byteArrayOf(1, 2, 3, 4)),
         )
 
         typedCompact.payload shouldBe payload
@@ -60,6 +61,7 @@ val JwsTypedTest by matrixSuite {
             ),
             payload = payload,
             wrappedHeader = wrappedHeader,
+            signature = JWS.getSignature(wrappedHeader.header.algorithm, byteArrayOf(9, 8, 7, 6)),
         )
 
         val typedFlattened = typedCompact.toJwsFlattenedTyped()
@@ -90,6 +92,7 @@ val JwsTypedTest by matrixSuite {
             ),
             payload = payload,
             wrappedHeader = wrappedHeader,
+            signature = JWS.getSignature(wrappedHeader.header.algorithm, byteArrayOf(5, 6, 7, 8)),
         )
 
         val serialized = joseCompliantSerializer.encodeToString(serializer, typedCompact)
@@ -123,6 +126,7 @@ val JwsTypedTest by matrixSuite {
             ),
             payload = payload,
             wrappedHeader = wrappedHeader,
+            signature = JWS.getSignature(header.algorithm, byteArrayOf(4, 3, 2, 1)),
         )
 
         typedFlattened.payload shouldBe payload
@@ -155,6 +159,7 @@ val JwsTypedTest by matrixSuite {
             ),
             payload = payload,
             wrappedHeader = firstHeader,
+            signature = JWS.getSignature(firstHeader.header.algorithm, byteArrayOf(1, 1, 1, 1)),
         )
         val secondHeader = JwsHeaderWrapped(
             header = JwsHeader(
@@ -173,15 +178,16 @@ val JwsTypedTest by matrixSuite {
             ),
             payload = payload,
             wrappedHeader = secondHeader,
+            signature = JWS.getSignature(secondHeader.header.algorithm, byteArrayOf(2, 2, 2, 2)),
         )
 
         val typedGeneral = with(joseCompliantSerializer) {
-            JwsTyped<JsonObject, JwsHeader>(listOf(first.jws, second.jws))
+            listOf(first.jws, second.jws).toJwsGeneral().typed<JsonObject, JwsHeader>()
         }
 
         typedGeneral.payload shouldBe payload
         typedGeneral.jws shouldBe listOf(first.jws, second.jws).toJwsGeneral()
-        typedGeneral.header.map { it.unprotectedMembers } shouldBe listOf(
+        typedGeneral.wrappedHeaders.map { it.unprotectedMembers } shouldBe listOf(
             setOf(JwsHeader.SerialNames.KEY_ID),
             setOf(JwsHeader.SerialNames.TYPE),
         )

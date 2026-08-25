@@ -14,7 +14,7 @@ sealed class JwsTyped<out J : JWS, out P, out H : JwsHeaderBase> {
     abstract val jws: J
     abstract val payload: P
 
-    override fun toString() = jws.toString()
+    final override fun toString() = jws.toString()
 
     companion object {
         context(serialFormat: Json)
