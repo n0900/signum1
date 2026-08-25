@@ -17,7 +17,7 @@ inline fun <reified P, reified H : JwsHeaderBase> JwsFlattened.typed(): JwsFlatt
             this,
             getPayload<P>().getOrThrow(),
             wrapped,
-            JWS.getSignature(wrapped.header.algorithm, signatureInput)
+            JWS.getSignature(wrapped.header.algorithm, plainSignature)
         )
     }
 

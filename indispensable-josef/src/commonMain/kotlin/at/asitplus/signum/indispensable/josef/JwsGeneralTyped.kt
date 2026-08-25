@@ -20,14 +20,16 @@ inline fun <reified P, reified H : JwsHeaderBase> JwsGeneral.typed(): JwsGeneral
         this,
         getPayload<P>().getOrThrow(),
         wrappedHeaders,
-        wrappedHeaders.zip(signatureInputs) { wrapped, sigInput ->
+        wrappedHeaders.zip(signatureElements) { wrapped, signatureElement ->
             JWS.getSignature(
                 wrapped.header.algorithm,
-                sigInput
+                signatureElement.plainSignature
             )
         }
     )
 }
 
 fun <P, H : JwsHeaderBase> JwsGeneralTyped<P, H>.toJwsFlattenedTyped() =
-    jws.toJwsFlattened().mapIndexed { index, flattened -> JwsFlattenedTyped(flattened, payload, wrappedHeaders[index]) }
+    jws.toJwsFlattened().mapIndexed { index, flattened ->
+        JwsFlattenedTyped(flattened, payload, wrappedHeaders[index], signatures[index])
+    }
