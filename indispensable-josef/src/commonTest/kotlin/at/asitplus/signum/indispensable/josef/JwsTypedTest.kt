@@ -72,9 +72,13 @@ val JwsTypedTest by matrixSuite {
         reparsedCompact shouldBe typedCompact
     }
 
-    "typed serializer template roundtrips compact JWS with typed payload" {
-        val serializer = JwsTypedSerializerTemplate(
+    "typed serializer templates roundtrip compact JWS with typed payload" {
+        val genericSerializer = JwsTyped.SerializerTemplate(
             JwsCompactStringSerializer,
+            JsonObject.serializer(),
+            JwsHeader.serializer(),
+        )
+        val compactSerializer = JwsCompactTyped.SerializerTemplate(
             JsonObject.serializer(),
             JwsHeader.serializer(),
         )
@@ -95,11 +99,15 @@ val JwsTypedTest by matrixSuite {
             signature = JWS.getSignature(wrappedHeader.header.algorithm, byteArrayOf(5, 6, 7, 8)),
         )
 
-        val serialized = joseCompliantSerializer.encodeToString(serializer, typedCompact)
-        val reparsed = joseCompliantSerializer.decodeFromString(serializer, serialized)
+        val genericSerialized = joseCompliantSerializer.encodeToString(genericSerializer, typedCompact)
+        val genericReparsed = joseCompliantSerializer.decodeFromString(genericSerializer, genericSerialized)
+        val compactSerialized = joseCompliantSerializer.encodeToString(compactSerializer, typedCompact)
+        val compactReparsed: JwsCompactTyped<JsonObject, JwsHeader> =
+            joseCompliantSerializer.decodeFromString(compactSerializer, compactSerialized)
 
-        reparsed shouldBe typedCompact
-        reparsed.payload shouldBe payload
+        genericReparsed shouldBe typedCompact
+        compactReparsed shouldBe typedCompact
+        compactReparsed.payload shouldBe payload
     }
 
     "flattened typed wrappers can be created from split headers and existing flattened JWS" {
@@ -139,6 +147,17 @@ val JwsTypedTest by matrixSuite {
         with(joseCompliantSerializer) {
             typedFlattened.jws.typed<JsonObject, JwsHeader>() shouldBe typedFlattened
         }
+
+        val serializer = JwsFlattenedTyped.SerializerTemplate(
+            JsonObject.serializer(),
+            JwsHeader.serializer(),
+        )
+        val serialized = joseCompliantSerializer.encodeToString(serializer, typedFlattened)
+        val reparsed: JwsFlattenedTyped<JsonObject, JwsHeader> =
+            joseCompliantSerializer.decodeFromString(serializer, serialized)
+
+        reparsed shouldBe typedFlattened
+        reparsed.payload shouldBe payload
     }
 
     "general typed wrappers can be assembled from flattened signatures and expanded again" {
@@ -197,5 +216,16 @@ val JwsTypedTest by matrixSuite {
         with(joseCompliantSerializer) {
             typedGeneral.jws.typed<JsonObject, JwsHeader>() shouldBe typedGeneral
         }
+
+        val serializer = JwsGeneralTyped.SerializerTemplate(
+            JsonObject.serializer(),
+            JwsHeader.serializer(),
+        )
+        val serialized = joseCompliantSerializer.encodeToString(serializer, typedGeneral)
+        val reparsed: JwsGeneralTyped<JsonObject, JwsHeader> =
+            joseCompliantSerializer.decodeFromString(serializer, serialized)
+
+        reparsed shouldBe typedGeneral
+        reparsed.payload shouldBe payload
     }
 }
