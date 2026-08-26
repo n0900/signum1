@@ -1,7 +1,5 @@
 package at.asitplus.signum.indispensable.josef
 
-import at.asitplus.KmmResult
-import at.asitplus.catching
 import at.asitplus.nonFatalOrThrow
 import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import io.matthewnelson.encoding.core.Decoder.Companion.decodeToByteArray
@@ -14,7 +12,6 @@ import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.json.Json
 
 /**
  * Implements compact serialization as defined in [RFC 7515](https://datatracker.ietf.org/doc/html/rfc7515)
@@ -63,20 +60,6 @@ data class JwsCompact internal constructor(
     }
 
     companion object {
-
-        /**
-         * Build a [at.asitplus.signum.indispensable.josef.JwsCompact] received as string
-         * and immediately resolve the payload
-         */
-        context(serialFormat: Json)
-        inline fun <reified P, reified H : JwsHeaderBase> parse(base64UrlString: String): KmmResult<Triple<JwsCompact, P, JwsHeaderWrapped<H>>> =
-            catching {
-                val jws = JwsCompact(base64UrlString)
-                val payload = jws.getPayload<P>().getOrThrow()
-                val header = JwsHeaderWrapped.fromParts<H>(jws.plainProtectedHeader, null)
-                Triple(jws, payload, header)
-            }
-
         /**
          * Build a [at.asitplus.signum.indispensable.josef.JwsCompact] received as string
          */

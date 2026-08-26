@@ -65,33 +65,6 @@ val JwsSignedRegressionTest by matrixSuite {
         JwsSigned.deserialize(regressionCase.legacy.serialize()).getOrThrow() shouldBe regressionCase.legacy
     }
 
-    "JwsCompact.parse decodes compact serialization and typed payload" {
-        val typedPayload = JsonObject(
-            mapOf(
-                "iss" to JsonPrimitive("https://issuer.example"),
-                "sub" to JsonPrimitive("alice"),
-            )
-        )
-        val regressionCase = compactRegressionCase(
-            protectedHeader = JwsHeader(
-                algorithm = JwsAlgorithm.Signature.RS256,
-                type = "JWT",
-            ),
-            payload = joseCompliantSerializer.encodeToString(JsonObject.serializer(), typedPayload).encodeToByteArray(),
-            plainSignature = byteArrayOf(1, 2, 3, 4),
-        )
-
-        val (parsedCompact, parsedPayload, parsedHeader) = with(joseCompliantSerializer) {
-            JwsCompact.parse<JsonObject, JwsHeader>(regressionCase.compact.toString()).getOrThrow()
-        }
-
-        parsedCompact shouldBe regressionCase.compact
-        parsedHeader shouldBe with(joseCompliantSerializer) {
-            regressionCase.compact.typed<JsonObject, JwsHeader>().wrappedHeader
-        }
-        parsedPayload shouldBe typedPayload
-    }
-
     "typed payload decoding matches between JwsSigned and JwsCompact" {
         val typedPayload = JsonObject(
             mapOf(

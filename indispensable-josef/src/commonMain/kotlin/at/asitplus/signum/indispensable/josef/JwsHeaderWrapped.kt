@@ -86,17 +86,6 @@ data class JwsHeaderWrapped<out H : JwsHeaderBase>(
             unprotectedHeader = unprotectedHeader,
         )
 
-        /** Decodes fragments while [H] is still reified at the call site. */
-        context(serialFormat: Json)
-        inline fun <reified H : JwsHeaderBase> fromParts(
-            protectedHeader: ByteArray? = null,
-            unprotectedHeader: JsonObject? = null,
-        ): JwsHeaderWrapped<H> = fromParts(
-            serializer = serialFormat.serializersModule.serializer(),
-            protectedHeader = protectedHeader,
-            unprotectedHeader = unprotectedHeader,
-        )
-
         /** Decodes and combines JSON fragments using the supplied header serializer. */
         context(serialFormat: Json)
         fun <H : JwsHeaderBase> fromJsonObjects(
@@ -110,17 +99,6 @@ data class JwsHeaderWrapped<out H : JwsHeaderBase>(
                 unprotectedMembers = unprotectedHeader?.keys ?: emptySet(),
             )
         }
-
-        /** Decodes JSON fragments while [H] is still reified at the call site. */
-        context(serialFormat: Json)
-        inline fun <reified H : JwsHeaderBase> fromJsonObjects(
-            protectedHeader: JsonObject? = null,
-            unprotectedHeader: JsonObject? = null,
-        ): JwsHeaderWrapped<H> = fromJsonObjects(
-            serializer = serialFormat.serializersModule.serializer(),
-            protectedHeader = protectedHeader,
-            unprotectedHeader = unprotectedHeader,
-        )
     }
 }
 

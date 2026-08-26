@@ -81,7 +81,11 @@ val JwsHeaderPartsTest by matrixSuite {
             plainSignature = byteArrayOf(2),
         )
         val reconstructedHeader = with(joseCompliantSerializer) {
-            JwsHeaderWrapped.fromParts<JwsHeader>(flattened.plainProtectedHeader, flattened.unprotectedHeader)
+            JwsHeaderWrapped.fromParts(
+                JwsHeader.serializer(),
+                flattened.plainProtectedHeader,
+                flattened.unprotectedHeader,
+            )
         }
 
         reconstructedHeader shouldBe wrappedHeader
@@ -90,7 +94,8 @@ val JwsHeaderPartsTest by matrixSuite {
     "duplicate names across protected and unprotected headers are rejected" {
         val exception = runCatching {
             with(joseCompliantSerializer) {
-                JwsHeaderWrapped.fromJsonObjects<JwsHeader>(
+                JwsHeaderWrapped.fromJsonObjects(
+                    serializer = JwsHeader.serializer(),
                     protectedHeader = JsonObject(mapOf(JwsHeader.SerialNames.KEY_ID to JsonPrimitive("protected"))),
                     unprotectedHeader = JsonObject(mapOf(JwsHeader.SerialNames.KEY_ID to JsonPrimitive("unprotected"))),
                 )
@@ -121,7 +126,11 @@ val JwsHeaderPartsTest by matrixSuite {
             joseCompliantSerializer.encodeToString(flattened)
         )
         val reparsedHeader = with(joseCompliantSerializer) {
-            JwsHeaderWrapped.fromParts<JwsHeader>(reparsed.plainProtectedHeader, reparsed.unprotectedHeader)
+            JwsHeaderWrapped.fromParts(
+                JwsHeader.serializer(),
+                reparsed.plainProtectedHeader,
+                reparsed.unprotectedHeader,
+            )
         }
 
         reparsedHeader shouldBe wrappedHeader
@@ -156,7 +165,11 @@ val JwsHeaderPartsTest by matrixSuite {
         ) { byteArrayOf(1) }
         val serialized = joseCompliantSerializer.encodeToJsonElement(flattened).jsonObject
         val reconstructedHeader = with(joseCompliantSerializer) {
-            JwsHeaderWrapped.fromParts<JwsHeader>(flattened.plainProtectedHeader, flattened.unprotectedHeader)
+            JwsHeaderWrapped.fromParts(
+                JwsHeader.serializer(),
+                flattened.plainProtectedHeader,
+                flattened.unprotectedHeader,
+            )
         }
 
         reconstructedHeader shouldBe wrappedHeader
