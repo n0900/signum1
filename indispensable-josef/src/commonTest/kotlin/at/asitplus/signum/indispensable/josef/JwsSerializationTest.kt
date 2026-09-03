@@ -5,6 +5,7 @@ import at.asitplus.signum.indispensable.io.Base64UrlStrict
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.result.shouldBeFailure
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
@@ -36,14 +37,16 @@ private val generalVectorJson = """
 """.trimIndent()
 
 private val generalVectorSource = joseCompliantSerializer.decodeFromString(JsonObject.serializer(), generalVectorJson)
-private val generalVectorPayload = generalVectorSource[JWS.SerialNames.PAYLOAD]!!.jsonPrimitive.content
-private val generalVectorSignatures = generalVectorSource[JWS.SerialNames.SIGNATURES]!!.jsonArray
+private val generalVectorPayload = generalVectorSource[JWS.SerialNames.PAYLOAD].shouldNotBeNull().jsonPrimitive.content
+private val generalVectorSignatures = generalVectorSource[JWS.SerialNames.SIGNATURES].shouldNotBeNull().jsonArray
 
 val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Sequential }) {
     "general JWS keeps vector bytes stable through serialization and flattening" {
         val general = joseCompliantSerializer.decodeFromString<JwsGeneral>(generalVectorJson)
+        val flattened = general.toJwsFlattened()
 
         general.signatureElements.size shouldBe 2
+        flattened.size shouldBe general.signatureElements.size
         general.wrappedHeaders[0].header.algorithm shouldBe JwsAlgorithm.Signature.RS256
         general.wrappedHeaders[1].header.algorithm shouldBe JwsAlgorithm.Signature.ES256
         general.signatures[0].shouldBeInstanceOf<CryptoSignature.RSA>()
@@ -51,18 +54,24 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
 
         general.signatureElements.forEachIndexed { index, signatureElement ->
             val sourceSignature = generalVectorSignatures[index].jsonObject
-            val protectedHeaderBase64 = sourceSignature[JWS.SerialNames.PROTECTED]!!.jsonPrimitive.content
-            val signatureBase64 = sourceSignature[JWS.SerialNames.SIGNATURE]!!.jsonPrimitive.content
+            val protectedHeaderBase64 = sourceSignature[JWS.SerialNames.PROTECTED].shouldNotBeNull().jsonPrimitive.content
+            val signatureBase64 = sourceSignature[JWS.SerialNames.SIGNATURE].shouldNotBeNull().jsonPrimitive.content
 
             signatureElement.plainProtectedHeader shouldBe protectedHeaderBase64.decodeToByteArray(Base64UrlStrict)
             signatureElement.plainSignature shouldBe signatureBase64.decodeToByteArray(Base64UrlStrict)
             general.signatureInputs[index].decodeToString() shouldBe "$protectedHeaderBase64.$generalVectorPayload"
+
+            val flattenedEntry = flattened[index]
+            flattenedEntry.wrappedHeader shouldBe general.wrappedHeaders[index]
+            flattenedEntry.signature shouldBe general.signatures[index]
+            flattenedEntry.signatureInput shouldBe general.signatureInputs[index]
+            flattenedEntry.toJwsCompact().toString() shouldBe compactSerializationAt(index)
         }
 
         val reserialized = joseCompliantSerializer.encodeToString(general)
 
         joseCompliantSerializer.decodeFromString(JsonObject.serializer(), reserialized) shouldBe generalVectorSource
-        general.toJwsFlattened().toJwsGeneral() shouldBe general
+        flattened.toJwsGeneral() shouldBe general
     }
 
     "flattened JWS keeps unprotected headers stable through serialization and general conversion" {
@@ -88,7 +97,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
             capturedSignatureInput = signatureInput
             byteArrayOf(1, 2, 3, 4)
         }
-        val plainProtectedHeader = flattened.plainProtectedHeader!!
+        val plainProtectedHeader = flattened.plainProtectedHeader.shouldNotBeNull()
 
         capturedSignatureInput shouldBe JWS.getSignatureInput(plainProtectedHeader, payload)
 
@@ -189,7 +198,7 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
         val generalJson = joseCompliantSerializer.decodeFromString<JsonObject>(
             joseCompliantSerializer.encodeToString(general)
         )
-        generalJson[JWS.SerialNames.SIGNATURES]!!
+        generalJson[JWS.SerialNames.SIGNATURES].shouldNotBeNull()
             .jsonArray
             .single()
             .shouldNotContainKey(JWS.SerialNames.PROTECTED)
@@ -372,19 +381,6 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
         results.forEach { result ->
             result.isSuccess shouldBe false
             result.shouldBeFailure().shouldBeInstanceOf<SerializationException>()
-        }
-    }
-
-    "general to flattened to compact preserves each single-signature view" {
-        val general = joseCompliantSerializer.decodeFromString<JwsGeneral>(generalVectorJson)
-        val flattened = general.toJwsFlattened()
-
-        flattened.size shouldBe general.signatureElements.size
-        flattened.forEachIndexed { index, entry ->
-            entry.wrappedHeader shouldBe general.wrappedHeaders[index]
-            entry.signature shouldBe general.signatures[index]
-            entry.signatureInput shouldBe general.signatureInputs[index]
-            entry.toJwsCompact().toString() shouldBe compactSerializationAt(index)
         }
     }
 
@@ -574,8 +570,8 @@ val JwsSerializerTest by matrixSuite(matrixConfig { execution = ExecutionMode.Se
 
 private fun compactSerializationAt(index: Int): String {
     val sourceSignature = generalVectorSignatures[index].jsonObject
-    val protectedHeaderBase64 = sourceSignature[JWS.SerialNames.PROTECTED]!!.jsonPrimitive.content
-    val signatureBase64 = sourceSignature[JWS.SerialNames.SIGNATURE]!!.jsonPrimitive.content
+    val protectedHeaderBase64 = sourceSignature[JWS.SerialNames.PROTECTED].shouldNotBeNull().jsonPrimitive.content
+    val signatureBase64 = sourceSignature[JWS.SerialNames.SIGNATURE].shouldNotBeNull().jsonPrimitive.content
     return "$protectedHeaderBase64.$generalVectorPayload.$signatureBase64"
 }
 
@@ -614,7 +610,7 @@ private fun Result<*>.shouldBeRejectedPaddedBase64Url() {
     val failure = shouldBeFailure()
     failure.message.orEmpty().shouldContain("Decoding failed")
     failure.cause shouldNotBe null
-    failure.cause!!.message.orEmpty().shouldContain("Trailing = are not supported")
+    failure.cause.shouldNotBeNull().message.orEmpty().shouldContain("Trailing = are not supported")
 }
 
 private fun Result<*>.shouldBeRejectedEmptyProtectedHeader() {
