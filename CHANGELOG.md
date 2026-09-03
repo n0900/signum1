@@ -8,10 +8,8 @@ This is a major refactor!
 * make all provider functions suspend
 * Rework JWS header handling (**breaking**):
     * Remove `JwsHeader.Part`
-    * Introduce `JwsHeaderWrapped`, combining the modeled `JwsHeader` with its unprotected-member placement metadata
+    * Introduce `JwsHeaderWrapped` as a read-only, type-safe view of the effective `JwsHeader` and its unprotected-member placement
     * Expose wrapped headers as `JwsCompact.wrappedHeader`, `JwsFlattened.wrappedHeader`, `SignatureElement.wrappedHeader`, and `JwsGeneral.wrappedHeaders`
-    * Add `JwsHeaderWrapped.toProtectedHeader()` and `toUnprotectedHeader()` for splitting the effective header
-    * Track only modeled header parameters in `effectiveUnprotectedMembers`, allowing valid unmodeled extension parameters during JWS deserialization
 * Dependency Updates:
     * Bouncy Castle 1.85
     * multibase 1.3.0
