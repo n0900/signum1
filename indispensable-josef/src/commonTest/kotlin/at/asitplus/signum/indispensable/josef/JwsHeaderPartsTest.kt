@@ -122,5 +122,4 @@ val JwsHeaderPartsTest by matrixSuite {
         reparsedHeader shouldBe wrappedHeader
         reparsedHeader.header shouldBe header
     }
-
 }

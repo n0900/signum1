@@ -71,10 +71,10 @@ The model distinguishes three header views:
   `unprotectedHeaderMembers` records which modeled names came from the unprotected one.
 
 A bare header model loses protection status. Use `JwsHeaderWrapped<H>` or the original fragments when checking
-placement. `unprotectedHeaderMembers` contains the modeled names carried in the unprotected fragment.
-Wrapper equality uses the modeled header and this placement.
+placement. `unprotectedHeaderMembers` contains only names represented by the serialized model. Wrapper equality
+uses the modeled header and this effective placement; absent or unmodeled names do not affect equality.
 
-The wrapper serializes the modeled header once during construction and caches its protected and unprotected fragments.
+The wrapper serializes the modeled header once during construction and caches its fragments internally.
 It does not retain a header serializer.
 Unmodeled values remain in the original wire fragments for round trips; use the retained `jws` for forwarding and
 verification, rather than reconstructing it from the wrapper.
@@ -184,9 +184,10 @@ Certificate and key URL metadata remain caller-supplied.
 
 Each operation serializes the payload once and decodes the signed wire object to obtain the typed view.
 General signing prepares all headers before invoking any signer and preserves signature order.
-It accepts `JwsHeaderWrapped` values and reuses their cached JSON, member placement, and individual header
-serializers. Supply an explicit header serializer when constructing a wrapper for an erased header type.
-The signing overloads accept explicit payload serializers; compact and flattened signing also accept header serializers.
+It accepts `JwsHeaderWrapped` values and reuses their cached JSON and member placement.
+Supply an explicit header serializer when constructing a wrapper for an erased header type.
+All signing operations accept explicit payload and header serializers; reified overloads infer both serializers.
+General signing uses the supplied header serializer to decode the signed headers into the returned typed view.
 Configure a signing provider, such as Supreme, before creating signers.
 
 To serialize a typed view through its retained wire object:
