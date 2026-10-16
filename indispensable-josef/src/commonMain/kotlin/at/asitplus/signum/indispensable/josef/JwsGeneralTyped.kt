@@ -64,11 +64,18 @@ fun <P, H : JwsHeaderBase> JwsGeneral.typed(
     payloadSerializer: KSerializer<P>,
     headerSerializer: KSerializer<H>,
     serialFormat: Json = joseCompliantSerializer,
+): JwsGeneralTyped<P, H> = typed(payloadSerializer, headerSerializerAt = { headerSerializer }, serialFormat)
+
+/** Decodes headers with their individual serializers while decoding the shared payload once. */
+internal fun <P, H : JwsHeaderBase> JwsGeneral.typed(
+    payloadSerializer: KSerializer<P>,
+    headerSerializerAt: (Int) -> KSerializer<H>,
+    serialFormat: Json = joseCompliantSerializer,
 ): JwsGeneralTyped<P, H> {
     val payload = getPayload(payloadSerializer, serialFormat).getOrThrow()
-    val signatureViews = signatureElements.map { element ->
+    val signatureViews = signatureElements.mapIndexed { index, element ->
         val wrappedHeader = JwsHeaderWrapped.fromParts(
-            serializer = headerSerializer,
+            serializer = headerSerializerAt(index),
             protectedHeader = element.plainProtectedHeader,
             unprotectedHeader = element.unprotectedHeader,
             serialFormat = serialFormat,

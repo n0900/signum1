@@ -42,7 +42,7 @@ the signing input. Instead, it keeps the wire/data object as the source of truth
 | Wire/data | Preserve cryptographically relevant bytes and serialization shape | `JWS`, `JwsCompact`, `JwsFlattened`, `JwsGeneral`, `SignatureElement` |
 | Typed/domain | Decode payloads, custom headers, and signatures while retaining the wire object | `JwsTyped<J, P, H>`, `JwsCompactTyped<P, H>`, `JwsFlattenedTyped<P, H>`, `JwsGeneralTyped<P, H>` |
 | Effective header | Combine modeled header values and retain their protection status | `JwsHeaderWrapped<H>` with `H : JwsHeaderBase` |
-| Signing | Prepare effective headers, serialize payloads, and create signed wire objects and typed views | `JwsSigner`, `JwsSigningParameters<H>` |
+| Signing | Prepare effective headers, serialize payloads, and create signed wire objects and typed views | `JwsSigner` |
 
 `JwsTyped` is a sealed base for three concrete typed views. Each retains its original `jws` and decoded `payload`.
 Compact and flattened views also expose `wrappedHeader` and `signature`; general views expose ordered
@@ -167,7 +167,7 @@ val jwsSigner = JwsSigner(mapOf(signingHeader.algorithm to signer))
 val compact = jwsSigner.signCompact(signingHeader, claims)
 val flattened = jwsSigner.signFlattened(signingHeader, claims, setOf("app_claim"))
 val general = jwsSigner.signGeneral(claims, listOf(
-    JwsSigningParameters(signingHeader, setOf("app_claim")),
+    JwsHeaderWrapped(signingHeader, setOf("app_claim")),
 ))
 ```
 
@@ -184,7 +184,9 @@ Certificate and key URL metadata remain caller-supplied.
 
 Each operation serializes the payload once and decodes the signed wire object to obtain the typed view.
 General signing prepares all headers before invoking any signer and preserves signature order.
-Explicit payload/header `KSerializer` overloads support erased types.
+It accepts `JwsHeaderWrapped` values and reuses their cached JSON, member placement, and individual header
+serializers. Supply an explicit header serializer when constructing a wrapper for an erased header type.
+The signing overloads accept explicit payload serializers; compact and flattened signing also accept header serializers.
 Configure a signing provider, such as Supreme, before creating signers.
 
 To serialize a typed view through its retained wire object:

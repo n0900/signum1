@@ -14,12 +14,6 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.serializer
 
-/** Header and member placement for one signature created by [JwsSigner.signGeneral]. */
-data class JwsSigningParameters<H : JwsHeaderBase>(
-    val header: H,
-    val unprotectedHeaderMembers: Set<String> = emptySet(),
-)
-
 /**
  * Creates signed JWS wire objects and derives their typed views from the signed bytes.
  *
@@ -93,32 +87,29 @@ class JwsSigner(signers: Map<JwsAlgorithm, Signer>) {
         unprotectedHeaderMembers,
     )
 
-    /** Signs one shared serialized payload, selecting a signer independently for each header in order. */
+    /** Signs one shared serialized payload, reusing each wrapped header's cached JSON and retained serializer. */
     suspend fun <P, H : JwsHeaderBase> signGeneral(
         payload: P,
-        signatures: List<JwsSigningParameters<H>>,
+        signatures: List<JwsHeaderWrapped<H>>,
         payloadSerializer: KSerializer<P>,
-        headerSerializer: KSerializer<H>,
     ): JwsGeneralTyped<P, H> {
         val parameters = signatures.toList()
         require(parameters.isNotEmpty()) { "General JWS requires at least one signature" }
         val prepared = parameters.map {
-            val serializedHeader = joseCompliantSerializer.encodeToJsonElement(headerSerializer, it.header).jsonObject
-            val signer = selectSigner(serializedHeader)
-            PreparedSignature(signer, with(signer) { prepareHeader(serializedHeader, it.unprotectedHeaderMembers) })
+            val signer = selectSigner(it.serializedHeader)
+            PreparedSignature(signer, with(signer) { prepareHeader(it.serializedHeader, it.unprotectedMembers) })
         }
         val payloadBytes = joseCompliantSerializer.encodeToString(payloadSerializer, payload).encodeToByteArray()
         return prepared.map { with(it.signer) { signFlattened(it.header, payloadBytes) } }
-            .toJwsGeneral().typed(payloadSerializer, headerSerializer)
+            .toJwsGeneral().typed(payloadSerializer, headerSerializerAt = { parameters[it].headerSerializer })
     }
 
-    suspend inline fun <reified P, reified H : JwsHeaderBase> signGeneral(
+    suspend inline fun <reified P, H : JwsHeaderBase> signGeneral(
         payload: P,
-        signatures: List<JwsSigningParameters<H>>,
+        signatures: List<JwsHeaderWrapped<H>>,
     ): JwsGeneralTyped<P, H> = signGeneral(
         payload, signatures,
         joseCompliantSerializer.serializersModule.serializer<P>(),
-        joseCompliantSerializer.serializersModule.serializer<H>(),
     )
 
     context(signer: Signer)

@@ -74,7 +74,7 @@ val JwsJvmTest by matrixSuite {
         "general typed JWS can be serialized and verified by Nimbus" { context ->
             val placement = setOf(JwsHeader.SerialNames.KEY_ID)
             val typed = context.jwsSigner.signGeneral(context.payload, context.headers.map { header ->
-                JwsSigningParameters(header, placement)
+                JwsHeaderWrapped(header, placement)
             })
             val parsed = JWSObjectJSON.parse(joseCompliantSerializer.encodeToString(typed.jws))
 
