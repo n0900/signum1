@@ -2,14 +2,14 @@ package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.CryptoSignature
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
-import at.asitplus.signum.indispensable.sign.Signer
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.serializer
 
 /**
  * Typed payload, effective header, and signature over an unchanged compact [jws].
- * Create views through [typed] or the companion factories; component construction and copying are internal.
+ * Create signed values through [JwsSigner] or decode views through [typed] or the parsing factory.
+ * Component construction and copying are internal.
  */
 @ConsistentCopyVisibility
 data class JwsCompactTyped<out P, H : JwsHeaderBase> internal constructor(
@@ -23,30 +23,6 @@ data class JwsCompactTyped<out P, H : JwsHeaderBase> internal constructor(
     val unprotectedHeaderMembers = wrappedHeader.unprotectedHeaderMembers
 
     companion object {
-        /** Signs a serialized payload and derives the typed view from the resulting wire object. */
-        suspend operator fun <P, H : JwsHeaderBase> invoke(
-            protectedHeader: H,
-            payload: P,
-            signer: Signer,
-            payloadSerializer: KSerializer<P>,
-            headerSerializer: KSerializer<H>,
-        ): JwsCompactTyped<P, H> =
-            signJwsFlattened(
-                JwsHeaderWrapped(protectedHeader, headerSerializer, emptySet()),
-                joseCompliantSerializer.encodeToString(payloadSerializer, payload).encodeToByteArray(),
-                signer,
-            ).toJwsCompact().typed(payloadSerializer, headerSerializer)
-
-        suspend inline operator fun <reified P, reified H : JwsHeaderBase> invoke(
-            protectedHeader: H,
-            payload: P,
-            signer: Signer,
-        ): JwsCompactTyped<P, H> = invoke(
-            protectedHeader, payload, signer,
-            joseCompliantSerializer.serializersModule.serializer<P>(),
-            joseCompliantSerializer.serializersModule.serializer<H>(),
-        )
-
         inline operator fun <reified P, reified H : JwsHeaderBase> invoke(
             base64UrlString: String,
             serialFormat: Json = joseCompliantSerializer,
