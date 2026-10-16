@@ -40,12 +40,15 @@ view is never used to reconstruct an incoming signing input.
 | Layer | Purpose | Main Types |
 |:--|:--|:--|
 | Wire/data | Preserve cryptographically relevant bytes and serialization shape | `JWS`, `JwsCompact`, `JwsFlattened`, `JwsGeneral`, `SignatureElement` |
-| Typed/domain | Provide a typed payload while retaining the wire object | `JwsTyped<J, P>` and its compact, flattened, and general aliases |
-| Effective header | Combine typed header values and retain their protection status | `JwsHeaderWrapped` |
+| Typed/domain | Decode payloads, custom headers, and signatures while retaining the wire object | `JwsTyped<J, P, H>` and its compact, flattened, and general views |
+| Effective header | Combine modeled header values and retain their protection status | `JwsHeaderWrapped<H>` with `H : JwsHeaderBase` |
 
-`JwsTyped` contains both the retained `jws` object and its decoded `payload`. Use `jws` when sending or storing the
-data. `JwsTypedSerializerTemplate` serializes only this object and derives the typed payload again when decoding.
-If you use the public `JwsTyped` constructor directly, you are responsible for keeping `jws` and `payload` consistent.
+`JwsTyped` is a sealed base for concrete compact, flattened, and general views. Each retains its original `jws`
+and decoded `payload`. Compact and flattened views expose `header`, `unprotectedHeaderMembers`, and `signature`;
+general views expose ordered `headers`, `unprotectedHeaderMembers`, and `signatures`. Wire objects retain bytes
+and fragments without eagerly decoding headers or signatures. Use `jws` when sending or storing data.
+`JwsTypedSerializerTemplate` serializes only that object and derives the decoded values again when decoding.
+Direct users of concrete typed constructors must keep the decoded values consistent with the retained wire object.
 
 ## JWS Representations
 
@@ -64,16 +67,17 @@ Each signature exposes three views of its header:
 * **Protected:** The first compact segment or the JSON `protected` member contains the signed header.
   Its decoded JSON bytes are retained in `plainProtectedHeader`.
 * **Unprotected:** The optional `unprotectedHeader: JsonObject` remains separate and is not signed.
-* **Combined:** `wrappedHeader: JwsHeaderWrapped<JwsHeader>` (or `wrappedHeaders` on `JwsGeneral`) provides the effective header.
-  Its `header` is the typed union of both fragments, with duplicate names rejected. Its `unprotectedHeaderMembers` records
-  which modeled names came from the unprotected fragment.
+* **Combined:** `header: H` on compact/flattened typed views, or ordered `headers: List<H>` on a general typed view,
+  provides the typed union of each signature's fragments, with duplicate names rejected. `unprotectedHeaderMembers`
+  records which modeled names came from the unprotected fragment, with one set per signature on general views.
 
-A bare `JwsHeader` does not retain protection status. Use `JwsHeaderWrapped` or the original fragments whenever
+A bare header model does not retain protection status. Use the typed view's placement metadata or original fragments whenever
 you need to determine whether a header parameter was signed.
 
-The wrapper is a one-way typed view: parameters not modeled by `JwsHeader` remain in `plainProtectedHeader` or
-`unprotectedHeader` for round trips, but their values are not available through the typed header. Their unprotected
-names remain available through the original unprotected wire fragment.
+`JwsHeaderWrapped<H>` serializes the modeled header once and caches its protected and unprotected fragments
+without retaining a serializer. Parameters not modeled by `H` remain in the original `plainProtectedHeader` or
+`unprotectedHeader` for round trips. Their values and unprotected names remain available through those original
+wire fragments; use the retained `jws` when forwarding or verifying incoming data.
 
 ### Serialization and Conversion Rules
 
@@ -81,9 +85,9 @@ names remain available through the original unprotected wire fragment.
   Typed headers and payloads are never reserialized to reconstruct this input.
 * `plainProtectedHeader`, `plainPayload`, and `plainSignature` contain decoded bytes.
   Pass plain payload bytes to the signing factories; the library handles base64url encoding.
-* Header parameters are protected by default. When creating a flattened JWS, only wire names explicitly listed in
-  `unprotectedMembers` are unprotected. Protected and unprotected fragments can complement each other, but duplicate
-  names are rejected.
+* Header parameters are protected by default. When constructing `JwsHeaderWrapped`, wire names listed in its
+  `unprotectedMembers` argument are unprotected; `unprotectedHeaderMembers` exposes the represented names. Protected
+  and unprotected fragments can complement each other, but duplicate names are rejected during typed decoding.
 * Conversions retain protected bytes and header placement. Compact JWS has no unprotected header, so only a fully
   protected flattened JWS can be converted to compact form. General JWS signatures must share one payload.
 
@@ -108,19 +112,54 @@ data, and `JwsCompactStringSerializer` when embedding a compact string in JSON.
 Signing factories serialize or partition the header once and pass the resulting exact signing input to the signer.
 To verify a signature, use the stored input and signature pairs:
 
-* `JwsCompact.signatureInput` and `JwsCompact.signature`
-* `JwsFlattened.signatureInput` and `JwsFlattened.signature`
-* Each corresponding pair in `JwsGeneral.signatureInputs` and `JwsGeneral.signatures`
+* `typedCompact.jws.signatureInput` and `typedCompact.signature`
+* `typedFlattened.jws.signatureInput` and `typedFlattened.signature`
+* Each `view.jws.signatureInput` and `view.signature` from `typedGeneral.toJwsFlattenedTyped()`
 
 !!! warning
     **Always verify the stored signing input.** Recreating it from `JwsHeader` or a typed payload can change the bytes.
     Parsing, typed access, and `JwsHeader.publicKey` do not verify a signature or establish key trust.
     Your application must perform signature verification, trust validation, and any application-specific checks.
 
-Raw signature conversion currently supports EC and RSA signature algorithms. Unsupported algorithms are rejected.
+Wire objects can retain opaque headers and unsupported signature algorithms. Creating a typed view decodes headers
+and converts raw signatures; conversion currently supports EC and RSA signature algorithms and rejects unsupported
+algorithms. Typed decoding does not handle critical extensions on behalf of the application.
 
 !!! note
     The older `JwsSigned` API is deprecated. Use `JwsCompactTyped` instead.
+
+## Custom Headers and Typed Access
+
+Define a serializable model implementing `JwsHeaderBase`. Interface serialization annotations are not inherited:
+implementations must declare wire names and serializers, or mark unmodeled properties as `@Transient`.
+
+```kotlin
+val typed = JwsCompact(receivedCompactString).typed<JsonObject, AppHeader>()
+val header: AppHeader = typed.header
+val signingInput = typed.jws.signatureInput
+val wrapped = JwsHeaderWrapped(header, setOf("app_claim"))
+val explicit = JwsHeaderWrapped(header, AppHeader.serializer(), setOf("app_claim"))
+```
+
+Reified `.typed<P, H>(serialFormat)` uses the supplied JSON configuration. Explicit serializers are supported through
+`.typed(payloadSerializer, headerSerializer, serialFormat)`. `JwsTypedSerializerTemplate` takes the wire, payload,
+and header serializers and uses `joseCompliantSerializer` for decoded views. Contextual serialization is out of scope.
+The callback signing helpers are deprecated pending a signing service.
+
+### Migration
+
+| Previous API | Replacement |
+|:--|:--|
+| Typed aliases such as `JwsCompactTyped<P>` | Concrete views such as `JwsCompactTyped<P, H>` |
+| Header/signature properties on wire objects | Header/signature properties on typed views |
+| `jws.typed<J, P>()` | `jws.typed<P, H>()` on the concrete wire form |
+| `JwsCompact.parse<P>()` returning a pair | `JwsCompact.parse<P, H>()` returning wire object, payload, and wrapped header as a triple |
+| Two-argument `JwsTypedSerializerTemplate` | Add the header serializer as the third argument |
+| Payload-signing `JwsTyped` factories | Construct the wire form from payload bytes, then call `.typed<P, H>()` |
+| `JwsFlattened(header, payload, unprotectedMembers, signer)` | `JwsFlattened(JwsHeaderWrapped(header, unprotectedMembers), payload, signer)` |
+| Named `getPayload(serialFormat = ...)` argument | `getPayload(payloadFormat = ...)` |
+
+`JwsHeader` remains available but is deprecated in favor of application-defined models implementing `JwsHeaderBase`.
 
 ## JWT Payloads
 
