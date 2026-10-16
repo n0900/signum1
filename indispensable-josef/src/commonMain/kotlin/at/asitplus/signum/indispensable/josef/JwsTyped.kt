@@ -1,6 +1,8 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
+import at.asitplus.signum.indispensable.sign.Signer
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 
 /**
@@ -17,6 +19,36 @@ sealed class JwsTyped<out J : JWS, out P, out H : JwsHeaderBase> {
     final override fun toString() = jws.toString()
 
     companion object {
+        /** Creates a compact typed JWS. */
+        suspend operator fun <P, H : JwsHeaderBase> invoke(
+            protectedHeader: H,
+            payload: P,
+            signer: Signer,
+            payloadSerializer: KSerializer<P>,
+            headerSerializer: KSerializer<H>,
+        ): JwsCompactTyped<P, H> = JwsCompactTyped(
+            protectedHeader, payload, signer, payloadSerializer, headerSerializer,
+        )
+
+        suspend inline operator fun <reified P, reified H : JwsHeaderBase> invoke(
+            protectedHeader: H,
+            payload: P,
+            signer: Signer,
+        ): JwsCompactTyped<P, H> = JwsCompactTyped(protectedHeader, payload, signer)
+
+        /** Creates a general typed JWS with one shared payload. */
+        suspend operator fun <P, H : JwsHeaderBase> invoke(
+            payload: P,
+            signatures: List<JwsSigningParameters<H>>,
+            payloadSerializer: KSerializer<P>,
+            headerSerializer: KSerializer<H>,
+        ): JwsGeneralTyped<P, H> = JwsGeneralTyped(payload, signatures, payloadSerializer, headerSerializer)
+
+        suspend inline operator fun <reified P, reified H : JwsHeaderBase> invoke(
+            payload: P,
+            signatures: List<JwsSigningParameters<H>>,
+        ): JwsGeneralTyped<P, H> = JwsGeneralTyped(payload, signatures)
+
         inline operator fun <reified P, reified H : JwsHeaderBase> invoke(
             base64UrlString: String,
             serialFormat: Json = joseCompliantSerializer,
