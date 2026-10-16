@@ -3,7 +3,6 @@
 package at.asitplus.signum.indispensable.josef
 
 import at.asitplus.signum.indispensable.sign.EcdsaSignature
-import at.asitplus.signum.indispensable.sign.RsaSignature
 import at.asitplus.signum.indispensable.josef.io.joseCompliantSerializer
 import at.asitplus.testballoon.matrix.*
 import io.kotest.matchers.shouldBe

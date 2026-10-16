@@ -6,12 +6,7 @@ import at.asitplus.signum.indispensable.sign.Signer
 import at.asitplus.signum.indispensable.sign.sign
 import at.asitplus.signum.indispensable.sign.signature
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.*
 import kotlinx.serialization.serializer
 
 /**
@@ -87,7 +82,7 @@ class JwsSigner(signers: Map<JwsAlgorithm, Signer>) {
         unprotectedHeaderMembers,
     )
 
-    /** Signs one shared serialized payload using each wrapped header's cached fragments and placement. */
+    /** Signs one shared serialized payload, reusing each wrapped header's cached JSON and member placement. */
     suspend fun <P, H : JwsHeaderBase> signGeneral(
         payload: P,
         signatures: List<JwsHeaderWrapped<H>>,
@@ -96,15 +91,10 @@ class JwsSigner(signers: Map<JwsAlgorithm, Signer>) {
     ): JwsGeneralTyped<P, H> {
         val parameters = signatures.toList()
         require(parameters.isNotEmpty()) { "General JWS requires at least one signature" }
-        val prepared = parameters.map { wrappedHeader ->
-            val serializedHeader = JsonObject(wrappedHeader.protectedHeaderJson.toMutableMap().apply {
-                putAll(wrappedHeader.unprotectedHeader)
-            })
+        val prepared = parameters.map {
+            val serializedHeader = it.protectedHeaderJson.strictUnion(it.unprotectedHeader)
             val signer = selectSigner(serializedHeader)
-            PreparedSignature(
-                signer,
-                with(signer) { prepareHeader(serializedHeader, wrappedHeader.unprotectedHeaderMembers) },
-            )
+            PreparedSignature(signer, with(signer) { prepareHeader(serializedHeader, it.unprotectedHeaderMembers) })
         }
         val payloadBytes = joseCompliantSerializer.encodeToString(payloadSerializer, payload).encodeToByteArray()
         return prepared.map { with(it.signer) { signFlattened(it.header, payloadBytes) } }
@@ -146,14 +136,16 @@ class JwsSigner(signers: Map<JwsAlgorithm, Signer>) {
             publicKey.jwkId?.let { put("kid", JsonPrimitive(it)) }
             if (get("jwk")?.let { it != JsonNull } == true) {
                 val keyId = get("kid")?.jsonPrimitive?.contentOrNull
-                put("jwk", joseCompliantSerializer.encodeToJsonElement(JsonWebKey.serializer(), publicKey.toJsonWebKey(keyId)))
+                put(
+                    "jwk",
+                    joseCompliantSerializer.encodeToJsonElement(JsonWebKey.serializer(), publicKey.toJsonWebKey(keyId))
+                )
             }
         })
         return HeaderParts(
-            protectedHeader = JsonObject(effectiveHeader.filterKeys { it !in unprotectedHeaderMembers })
-                .takeUnless { it.isEmpty() }?.toProtectedHeaderBytes(),
-            unprotectedHeader = JsonObject(effectiveHeader.filterKeys { it in unprotectedHeaderMembers })
-                .takeUnless { it.isEmpty() },
+            protectedHeader = JsonObject(effectiveHeader.filterKeys { it !in unprotectedHeaderMembers }).takeUnless { it.isEmpty() }
+                ?.toProtectedHeaderBytes(),
+            unprotectedHeader = JsonObject(effectiveHeader.filterKeys { it in unprotectedHeaderMembers }).takeUnless { it.isEmpty() },
         )
     }
 

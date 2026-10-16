@@ -130,7 +130,7 @@ val JwsSignerTest by matrixSuite {
                 SigningPayload.serializer().serialize(encoder, value)
             }
         }
-        val typed = jwsSigner.signGeneral(SigningPayload("alice"), parameters, serializer)
+        val typed = jwsSigner.signGeneral(SigningPayload("alice"), parameters, serializer, SigningHeader.serializer())
         encodings shouldBe 1
         typed.headers.map { it.keyId } shouldBe listOf("key-0", "key-1")
         typed.unprotectedHeaderMembers shouldBe listOf(setOf("kid"), emptySet())
@@ -145,39 +145,40 @@ val JwsSignerTest by matrixSuite {
         reified.payload shouldBe typed.payload
     }
 
-    "general signing reuses cached headers and retains each wrapper serializer" {
+    "general signing reuses cached headers and decodes with the supplied serializer" {
         val signers = listOf(newEcSigner(), newRsaSigner())
         val jwsSigner = JwsSigner(signers.associateBy { it.signatureAlgorithm.toJwsAlgorithm().getOrThrow() })
         val encodings = IntArray(signers.size)
-        val decodings = IntArray(signers.size)
         val headers = signers.mapIndexed { index, signer ->
             val serializer = object : KSerializer<SigningHeader> by SigningHeader.serializer() {
                 override fun serialize(encoder: Encoder, value: SigningHeader) {
                     encodings[index]++
-                    SigningHeader.serializer().serialize(encoder, value)
-                }
-
-                override fun deserialize(decoder: Decoder): SigningHeader {
-                    decodings[index]++
-                    return SigningHeader.serializer().deserialize(decoder).let {
-                        it.copy(keyId = "${it.keyId}-view-$index")
-                    }
+                    SigningHeader.serializer().serialize(encoder, value.copy(extension = "wire-$index"))
                 }
             }
             JwsHeaderWrapped(
                 SigningHeader(signer.signatureAlgorithm.toJwsAlgorithm().getOrThrow(), "key-$index"),
-                if (index == 0) setOf("kid") else emptySet(),
                 serializer,
+                if (index == 0) setOf("kid") else emptySet(),
             )
         }
         encodings.toList() shouldBe listOf(1, 1)
+        var decodings = 0
+        val viewSerializer = object : KSerializer<SigningHeader> by SigningHeader.serializer() {
+            override fun deserialize(decoder: Decoder): SigningHeader {
+                decodings++
+                return SigningHeader.serializer().deserialize(decoder).let {
+                    it.copy(keyId = "${it.keyId}-view")
+                }
+            }
+        }
 
-        val typed = jwsSigner.signGeneral(SigningPayload("alice"), headers, SigningPayload.serializer())
+        val typed = jwsSigner.signGeneral(SigningPayload("alice"), headers, SigningPayload.serializer(), viewSerializer)
 
-        // Only the decoded output wrappers serialize again; signing consumes the cached input headers.
-        encodings.toList() shouldBe listOf(2, 2)
-        decodings.toList() shouldBe listOf(1, 1)
-        typed.headers.map { it.keyId } shouldBe listOf("key-0-view-0", "key-1-view-1")
+        encodings.toList() shouldBe listOf(1, 1)
+        decodings shouldBe 2
+        typed.headers.map { it.keyId } shouldBe listOf("key-0-view", "key-1-view")
+        typed.headers.map { it.extension } shouldBe listOf("wire-0", "wire-1")
         typed.unprotectedHeaderMembers shouldBe listOf(setOf("kid"), emptySet())
         typed.toJwsFlattenedTyped().forEachIndexed { index, flattened ->
             signers[index].makeVerifier().verify(flattened.jws.signatureInput, flattened.signature) shouldBe
@@ -207,7 +208,7 @@ val JwsSignerTest by matrixSuite {
         val compact = jwsSigner.signCompact(header, payload, payloadSerializer, headerSerializer)
         val flattened = jwsSigner.signFlattened(header, payload, payloadSerializer, headerSerializer, setOf("kid"))
         val general = jwsSigner.signGeneral(
-            payload, listOf(JwsHeaderWrapped(header, emptySet(), headerSerializer)), payloadSerializer,
+            payload, listOf(JwsHeaderWrapped(header, headerSerializer, emptySet())), payloadSerializer, headerSerializer,
         )
         (listOf(compact.toJwsFlattenedTyped(), flattened) + general.toJwsFlattenedTyped()).forEach { typed ->
             typed.payload.sub shouldBe "alice"
